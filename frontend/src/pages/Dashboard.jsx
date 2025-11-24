@@ -2,7 +2,8 @@ import { Link } from "react-router-dom";
 
 export default function DashboardPage() {
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
+
+    <div className=" min-h-screen bg-gray-200 text-gray-900">
       <div className="max-w-6xl mx-auto px-6 py-10 flex gap-8">
         <aside className="w-56">
           <div className="text-2xl font-bold mb-6">Hoveddashboard</div>
