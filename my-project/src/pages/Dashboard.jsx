@@ -7,18 +7,10 @@ export default function DashboardPage() {
         <aside className="w-56">
           <div className="text-2xl font-bold mb-6">Hoveddashboard</div>
           <nav className="flex flex-col gap-3">
-            <Link
-              to="/dashboard"
-              className="px-4 py-2 border rounded bg-white text-left"
-            >
-              Dashbord
-            </Link>
-            <button className="px-4 py-2 border rounded text-left">
-              Producter
-            </button>
-            <button className="px-4 py-2 border rounded text-left">
-              Brukere
-            </button>
+            <Link to="/dashboard" className="px-4 py-2 border rounded bg-white text-left">Dashbord</Link>
+            <button className="px-4 py-2 border rounded text-left">Producter</button>
+            <button className="px-4 py-2 border rounded text-left">Brukere</button>
+            <button className="px-4 py-2 border rounded text-left">Logg ut</button>
           </nav>
         </aside>
 
