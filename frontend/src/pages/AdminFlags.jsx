@@ -2,12 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
-const API_BASE = 'http://127.0.0.1:5000';
-
 export default function AdminFlags() {
   const navigate = useNavigate();
   const [flags, setFlags] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     fetchFlags();
@@ -17,15 +16,18 @@ export default function AdminFlags() {
 
   async function fetchFlags() {
     try {
-      const res = await fetch(`${API_BASE}/flags`, {
-        headers: { 'X-Auth-Token': localStorage.getItem('auth_token') || '' }
-      });
+      setError('');
+      const res = await fetch(`/admin/flags`);
       if (res.ok) {
         const data = await res.json();
         setFlags(data);
+      } else {
+        const txt = await res.text();
+        setError(txt || 'Failed to load flags');
       }
     } catch (err) {
       console.error('Error fetching flags:', err);
+      setError('Error fetching flags');
     } finally {
       setLoading(false);
     }
@@ -33,9 +35,13 @@ export default function AdminFlags() {
 
   async function handleResolveFlag(flagId) {
     try {
-      const res = await fetch(`${API_BASE}/flags/${flagId}/resolve`, {
+      const notes = window.prompt('Опишите, что было сделано (опционально):', '');
+      const res = await fetch(`/admin/flags/${flagId}/resolve`, {
         method: 'PUT',
-        headers: { 'X-Auth-Token': localStorage.getItem('auth_token') || '' }
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(notes ? { resolution_notes: notes } : {})
       });
       if (res.ok) {
         setFlags(flags.filter(f => f.id !== flagId));
@@ -60,6 +66,10 @@ export default function AdminFlags() {
           ← Back
         </motion.button>
       </div>
+
+      {error && (
+        <p className="mb-4 text-sm text-red-400">{error}</p>
+      )}
 
       {loading ? (
         <p className="text-slate-400">Loading flags...</p>
@@ -86,6 +96,11 @@ export default function AdminFlags() {
                   </h3>
                   {flag.message && (
                     <p className="text-slate-300 mb-2">{flag.message}</p>
+                  )}
+                  {flag.resolution_notes && (
+                    <p className="text-xs text-emerald-300 mb-1">
+                      Решение: {flag.resolution_notes}
+                    </p>
                   )}
                   <p className="text-sm text-slate-500">
                     Item: {flag.item_id || 'N/A'} | User: {flag.user_id || 'N/A'} | {new Date(flag.created_at).toLocaleString()}

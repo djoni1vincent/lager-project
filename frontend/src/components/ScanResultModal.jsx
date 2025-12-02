@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 
-const API_BASE = 'http://127.0.0.1:5000';
-
 export default function ScanResultModal({ result, onClose, onAction }) {
   const [step, setStep] = useState('view'); // 'view', 'selectItem', 'loanAction', 'confirm'
   const [selectedItem, setSelectedItem] = useState(null);
@@ -20,7 +18,7 @@ export default function ScanResultModal({ result, onClose, onAction }) {
     setError('');
 
     try {
-      const res = await fetch(`${API_BASE}/loans`, {
+      const res = await fetch(`/loans`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -50,7 +48,7 @@ export default function ScanResultModal({ result, onClose, onAction }) {
     setError('');
 
     try {
-      const res = await fetch(`${API_BASE}/loans/${loanId}/return`, {
+      const res = await fetch(`/loans/${loanId}/return`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_barcode: result.user.barcode })

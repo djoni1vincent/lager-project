@@ -3,6 +3,7 @@ import { useNavigate, Routes, Route } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import AdminUsers from './AdminUsers';
 import AdminItems from './AdminItems';
+import AdminItemDetail from './AdminItemDetail';
 import AdminFlags from './AdminFlags';
 
 export default function AdminDashboard() {
@@ -25,6 +26,7 @@ export default function AdminDashboard() {
         <Route path="/" element={<AdminOverview />} />
         <Route path="/users" element={<AdminUsers />} />
         <Route path="/items" element={<AdminItems />} />
+        <Route path="/items/:id" element={<AdminItemDetail />} />
         <Route path="/flags" element={<AdminFlags />} />
       </Routes>
     </div>

@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
 Lager System API — Item lending library for schools.
- 
+
 Roles:
   - admin: Full DB access, must login (username + password)
   - staff: Same as admin (TBD)
   - user: Can loan/return items via barcode scan, NO login required
-  
+
 Public operations (no login):
   - POST /scan: scan barcode → get item or user details
   - POST /loans: create loan (user barcode + item barcode or ID)
@@ -14,7 +14,7 @@ Public operations (no login):
   - POST /loans/<id>/extend: extend loan (user barcode)
   - GET /items: list items (public view)
   - GET /users: list users (names + barcodes, no contact info)
-  
+
 Admin operations (login required):
   - GET /admin/users: list users (with contact info)
   - POST /admin/users: add user
@@ -50,11 +50,18 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-change-me")
 
 # CORS: allow dev ports, support credentials for session cookies
-cors_origins = os.environ.get("CORS_ORIGINS", "http://localhost:5173,http://localhost:5174").split(",")
+cors_origins = os.environ.get(
+    "CORS_ORIGINS",
+    "http://localhost:5173,http://localhost:5174"
+).split(",")
 CORS(app, origins=cors_origins, supports_credentials=True)
 
+# Cookie / session settings:
+# - We need SameSite=None so что бы браузер отправлял куки с запросами
+#   с фронтенда (порт 5173/5174) на backend:5000.
+# - Secure=True безопаснее, и на localhost современные браузеры это позволяют.
 app.config["SESSION_COOKIE_SAMESITE"] = os.environ.get("SESSION_COOKIE_SAMESITE", "None")
-app.config["SESSION_COOKIE_SECURE"] = os.environ.get("SESSION_COOKIE_SECURE", "False").lower() in ("1", "true", "yes")
+app.config["SESSION_COOKIE_SECURE"] = os.environ.get("SESSION_COOKIE_SECURE", "True").lower() in ("1", "true", "yes")
 
 # DB path at repo root
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -142,19 +149,29 @@ def init_db():
     )
     ''')
 
+    # Optional column for admin resolution notes (added later, so use ALTER TABLE).
+    try:
+        c.execute("ALTER TABLE flags ADD COLUMN resolution_notes TEXT")
+    except sqlite3.OperationalError:
+        # Column probably already exists – safe to ignore.
+        pass
+
     conn.commit()
 
     # Ensure admin user exists
     admin_exists = conn.execute("SELECT 1 FROM users WHERE username = 'admin'").fetchone()
     if not admin_exists:
-        password = secrets.token_hex(8)
-        admin_hash = generate_password_hash(password)
+        # Default credentials are documented in README_SYSTEM.md:
+        # username: admin, password: 1234
+        # In production this should be changed manually in the database.
+        admin_password = os.environ.get("DEFAULT_ADMIN_PASSWORD", "1234")
+        admin_hash = generate_password_hash(admin_password)
         conn.execute(
             "INSERT INTO users (name, role, username, password_hash, created_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)",
             ("System Admin", "admin", "admin", admin_hash)
         )
         conn.commit()
-        print(f"✓ Default admin created: username=admin password={password}")
+        print(f"✓ Default admin created: username=admin password={admin_password}")
 
     conn.close()
     print(f"✓ Database initialized at {DB_NAME}")
@@ -164,6 +181,8 @@ def admin_required(fn):
     """Decorator: check if user is logged in as admin."""
     @wraps(fn)
     def wrapper(*args, **kwargs):
+        print(f"DEBUG: admin_required - request.cookies: {request.cookies}")
+        print(f"DEBUG: admin_required - session.get('is_admin'): {session.get('is_admin')}")
         if not session.get("is_admin"):
             return jsonify({"error": "Admin authentication required"}), 401
         return fn(*args, **kwargs)
@@ -292,7 +311,7 @@ def list_items():
     """List all items with their current loan status (public view)."""
     conn = get_db()
     items = conn.execute("SELECT * FROM items ORDER BY name").fetchall()
-    
+
     result = []
     for item in items:
         item_dict = dict(item)
@@ -621,7 +640,7 @@ def create_flag():
         return jsonify({"error": "Could not create flag", "detail": str(e)}), 500
 
 
-@app.route("/flags", methods=["GET"])
+@app.route("/admin/flags", methods=["GET"])
 @admin_required
 def list_flags():
     """List all flags (admin only)."""
@@ -631,16 +650,25 @@ def list_flags():
     return jsonify([dict(f) for f in flags])
 
 
-@app.route("/flags/<int:flag_id>/resolve", methods=["PUT"])
+@app.route("/admin/flags/<int:flag_id>/resolve", methods=["PUT"])
 @admin_required
 def resolve_flag(flag_id):
-    """Resolve a flag (admin only)."""
+    """Resolve a flag (admin only). Optionally accept resolution_notes."""
+    data = request.json or {}
+    resolution_notes = data.get("resolution_notes")
+
     conn = get_db()
     try:
-        conn.execute(
-            "UPDATE flags SET resolved = 1, resolved_at = CURRENT_TIMESTAMP WHERE id = ?",
-            (flag_id,)
-        )
+        if resolution_notes is not None:
+            conn.execute(
+                "UPDATE flags SET resolved = 1, resolved_at = CURRENT_TIMESTAMP, resolution_notes = ? WHERE id = ?",
+                (resolution_notes, flag_id)
+            )
+        else:
+            conn.execute(
+                "UPDATE flags SET resolved = 1, resolved_at = CURRENT_TIMESTAMP WHERE id = ?",
+                (flag_id,)
+            )
         conn.commit()
         conn.close()
         return jsonify({"message": "Flag resolved"})
@@ -681,6 +709,7 @@ def auth_login():
     # Set session
     session["admin_id"] = user["id"]
     session["is_admin"] = True
+    print(f"DEBUG: After login - session: {session}")
 
     conn.close()
     user_dict = dict(user)
@@ -692,12 +721,14 @@ def auth_login():
 def auth_logout():
     """Admin logout."""
     session.clear()
+    print(f"DEBUG: After logout - session: {session}")
     return jsonify({"message": "Logged out"}), 200
 
 
 @app.route("/auth/me", methods=["GET"])
 def auth_me():
     """Get current admin session."""
+    print(f"DEBUG: auth_me - session.get('is_admin'): {session.get('is_admin')}")
     if not session.get("is_admin"):
         return jsonify({"is_admin": False, "user": None}), 200
 
@@ -1190,7 +1221,7 @@ def admin_check_overdue():
     body = "The following loans are overdue:\n\n"
     for loan in overdue_loans:
         body += f"Loan ID: {loan['id']}, Item ID: {loan['item_id']}, User ID: {loan['user_id']}, Due Date: {loan['due_date']}\n"
-    
+
     send_notification(subject, body)
 
     return jsonify({"message": f"{len(overdue_loans)} overdue loans found and flagged. Notification sent."})

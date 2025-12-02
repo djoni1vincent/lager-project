@@ -17,7 +17,7 @@ try {
 // Global fetch wrapper: automatically prepend API base to relative paths
 try {
   const _fetch = window.fetch.bind(window);
-  const API_BASE = (window.__API_BASE__ || "http://127.0.0.1:5000").replace(/\/$/, "");
+  const API_BASE = (window.__API_BASE__ || "http://localhost:5000").replace(/\/$/, "");
   window.fetch = (input, init = {}) => {
     try {
       // If input is a relative path (starts with '/'), forward to backend API base

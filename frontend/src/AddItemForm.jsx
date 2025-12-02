@@ -5,17 +5,17 @@ export default function AddItemForm({ onNewItem }) {
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
   const [quantity, setQuantity] = useState(1);
-  const [qrCode, setQrCode] = useState("");
+  const [barcode, setBarcode] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     // if QR code is empty, send null so SQLite UNIQUE constraint on empty string
     // doesn't block future inserts (empty string may be treated as a value)
-    const newItem = { name, description, location, quantity, qr_code: qrCode ? qrCode : null };
+    const newItem = { name, description, location, quantity, barcode: barcode ? barcode : null };
 
     try {
-      const res = await fetch("/items", {
+      const res = await fetch("/admin/items", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -39,7 +39,7 @@ export default function AddItemForm({ onNewItem }) {
       setDescription("");
       setLocation("");
       setQuantity(1);
-      setQrCode("");
+      setBarcode("");
 
       // Обновляем список товаров в Dashboard — backend возвращает объект
       onNewItem && onNewItem(data);
@@ -84,9 +84,9 @@ export default function AddItemForm({ onNewItem }) {
       />
       <input
         type="text"
-        placeholder="QR kode"
-        value={qrCode}
-        onChange={(e) => setQrCode(e.target.value)}
+        placeholder="Strekkode"
+        value={barcode}
+        onChange={(e) => setBarcode(e.target.value)}
         className="border p-2 rounded w-full"
       />
       <button type="submit" className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-400">

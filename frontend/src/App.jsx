@@ -3,6 +3,8 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Header from './components/Header';
 import HomePage from './pages/HomePage';
+import ItemDetail from './pages/ItemDetail';
+import ScanPage from './pages/ScanPage';
 import AdminLoginPage from './pages/AdminLoginPage';
 import AdminDashboard from './pages/AdminDashboard';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -25,6 +27,8 @@ function AppContent() {
           >
             <Routes location={location}>
               <Route path="/" element={<HomePage />} />
+              <Route path="/items/:id" element={<ItemDetail />} />
+              <Route path="/scan" element={<ScanPage />} />
               <Route path="/admin/login" element={<AdminLoginPage />} />
               <Route path="/admin/*" element={<AdminDashboard />} />
               <Route path="*" element={<Navigate to="/" replace />} />

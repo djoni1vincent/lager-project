@@ -2,8 +2,6 @@ import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import ScanResultModal from './ScanResultModal';
 
-const API_BASE = 'http://127.0.0.1:5000';
-
 export default function ScanBox({ onScanned }) {
   const [barcode, setBarcode] = useState('');
   const [scanning, setScanning] = useState(false);
@@ -22,7 +20,7 @@ export default function ScanBox({ onScanned }) {
     setError('');
 
     try {
-      const res = await fetch(`${API_BASE}/scan`, {
+      const res = await fetch(`/scan`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ barcode: barcode.trim() })

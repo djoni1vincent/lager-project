@@ -6,7 +6,7 @@ export default function AddUserForm({ onNewUser }) {
   const [classYear, setClassYear] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [qrCode, setQrCode] = useState("");
+  const [barcode, setBarcode] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -22,12 +22,12 @@ export default function AddUserForm({ onNewUser }) {
       class_year: classYear || null,
       username: username || null,
       password: password || null,
-      qr_code: qrCode ? qrCode : null,
+      barcode: barcode ? barcode : null,
     };
 
     setLoading(true);
     try {
-      const res = await fetch("/users", {
+      const res = await fetch("/admin/users", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -51,7 +51,7 @@ export default function AddUserForm({ onNewUser }) {
       setClassYear("");
       setUsername("");
       setPassword("");
-      setQrCode("");
+      setBarcode("");
     } catch (err) {
       console.error("Error creating user:", err);
       alert("Feil ved kommunikasjon med serveren");
@@ -104,9 +104,9 @@ export default function AddUserForm({ onNewUser }) {
 
       <input
         type="text"
-        placeholder="QR-kode (valgfritt)"
-        value={qrCode}
-        onChange={(e) => setQrCode(e.target.value)}
+        placeholder="Strekkode (valgfritt)"
+        value={barcode}
+        onChange={(e) => setBarcode(e.target.value)}
         className="border p-2 rounded w-full"
       />
 

@@ -1,11 +1,14 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-export default function ItemCard({ item }) {
+export default function ItemCard({ item, onClick }) {
   return (
     <motion.div
       whileHover={{ y: -4 }}
-      className="bg-slate-800 border border-slate-700 rounded-lg p-4 hover:border-slate-600 transition"
+      onClick={onClick}
+      className={`bg-slate-800 border border-slate-700 rounded-lg p-4 hover:border-slate-600 transition ${
+        onClick ? 'cursor-pointer' : ''
+      }`}
     >
       <h3 className="font-semibold text-white mb-2 truncate">{item.name}</h3>
       {item.description && (

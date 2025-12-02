@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
-const API_BASE = 'http://127.0.0.1:5000';
-
 export default function AdminUsers() {
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
@@ -22,9 +20,7 @@ export default function AdminUsers() {
 
   async function fetchUsers() {
     try {
-      const res = await fetch(`${API_BASE}/admin/users`, {
-        headers: { 'X-Auth-Token': localStorage.getItem('auth_token') || '' }
-      });
+      const res = await fetch(`/admin/users`);
       if (res.ok) {
         const data = await res.json();
         setUsers(data);
@@ -39,11 +35,10 @@ export default function AdminUsers() {
   async function handleAddUser(e) {
     e.preventDefault();
     try {
-      const res = await fetch(`${API_BASE}/admin/users`, {
+      const res = await fetch(`/admin/users`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'X-Auth-Token': localStorage.getItem('auth_token') || ''
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(formData)
       });
@@ -66,9 +61,8 @@ export default function AdminUsers() {
     if (!confirm('Delete this user?')) return;
 
     try {
-      const res = await fetch(`${API_BASE}/admin/users/${userId}`, {
-        method: 'DELETE',
-        headers: { 'X-Auth-Token': localStorage.getItem('auth_token') || '' }
+      const res = await fetch(`/admin/users/${userId}`, {
+        method: 'DELETE'
       });
       if (res.ok) {
         setUsers(users.filter(u => u.id !== userId));
