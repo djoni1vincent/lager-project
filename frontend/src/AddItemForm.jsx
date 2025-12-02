@@ -10,14 +10,26 @@ export default function AddItemForm({ onNewItem }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const newItem = { name, description, location, quantity, qr_code: qrCode };
+    // if QR code is empty, send null so SQLite UNIQUE constraint on empty string
+    // doesn't block future inserts (empty string may be treated as a value)
+    const newItem = { name, description, location, quantity, qr_code: qrCode ? qrCode : null };
 
     try {
-      const res = await fetch("http://127.0.0.1:5000/items", {
+      const res = await fetch("/items", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newItem),
       });
+
+      if (!res.ok) {
+        const txt = await res.text();
+        let errBody = null;
+        try { errBody = JSON.parse(txt); } catch { errBody = txt; }
+        console.error("Add item failed:", res.status, errBody);
+        alert("Kunne ikke legge til produkt: " + (errBody?.error || errBody || res.status));
+        return;
+      }
 
       const data = await res.json();
       console.log("Added:", data);
@@ -29,15 +41,16 @@ export default function AddItemForm({ onNewItem }) {
       setQuantity(1);
       setQrCode("");
 
-      // Обновляем список товаров в Dashboard
+      // Обновляем список товаров в Dashboard — backend возвращает объект
       onNewItem && onNewItem(data);
     } catch (err) {
       console.error("Error adding item:", err);
+      alert("Feil ved kommunikasjon med serveren. Sjekk at backend kjører.");
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-4 bg-white rounded shadow space-y-3">
+    <form onSubmit={handleSubmit} className="p-4 bg-gray-800 rounded shadow-lg space-y-3 transition hover:shadow-xl">
       <h3 className="font-bold text-lg">Legg til nytt produkt</h3>
       <input
         type="text"
@@ -65,7 +78,7 @@ export default function AddItemForm({ onNewItem }) {
         type="number"
         placeholder="Antall"
         value={quantity}
-        onChange={(e) => setQuantity(e.target.value)}
+        onChange={(e) => setQuantity(Number(e.target.value) || 1)}
         className="border p-2 rounded w-full"
         min={1}
       />

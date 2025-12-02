@@ -1,0 +1,183 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+
+const API_BASE = 'http://127.0.0.1:5000';
+
+export default function AdminUsers() {
+  const navigate = useNavigate();
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    barcode: '',
+    class_year: '',
+    role: 'user'
+  });
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  async function fetchUsers() {
+    try {
+      const res = await fetch(`${API_BASE}/admin/users`, {
+        headers: { 'X-Auth-Token': localStorage.getItem('auth_token') || '' }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUsers(data);
+      }
+    } catch (err) {
+      console.error('Error fetching users:', err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleAddUser(e) {
+    e.preventDefault();
+    try {
+      const res = await fetch(`${API_BASE}/admin/users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Auth-Token': localStorage.getItem('auth_token') || ''
+        },
+        body: JSON.stringify(formData)
+      });
+      if (res.ok) {
+        const newUser = await res.json();
+        setUsers([...users, newUser]);
+        setFormData({ name: '', barcode: '', class_year: '', role: 'user' });
+        setShowAddForm(false);
+        alert('User added!');
+      } else {
+        const err = await res.json();
+        alert('Error: ' + err.error);
+      }
+    } catch (err) {
+      alert('Error adding user');
+    }
+  }
+
+  async function handleDeleteUser(userId) {
+    if (!confirm('Delete this user?')) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/admin/users/${userId}`, {
+        method: 'DELETE',
+        headers: { 'X-Auth-Token': localStorage.getItem('auth_token') || '' }
+      });
+      if (res.ok) {
+        setUsers(users.filter(u => u.id !== userId));
+        alert('User deleted');
+      } else {
+        const err = await res.json();
+        alert('Error: ' + err.error);
+      }
+    } catch (err) {
+      alert('Error deleting user');
+    }
+  }
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">👥 User Management</h1>
+        <div className="space-x-2">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg transition"
+          >
+            {showAddForm ? 'Cancel' : '➕ Add User'}
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            onClick={() => navigate('/admin')}
+            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition"
+          >
+            ← Back
+          </motion.button>
+        </div>
+      </div>
+
+      {showAddForm && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-slate-800 border border-slate-700 rounded-lg p-6 mb-8"
+        >
+          <form onSubmit={handleAddUser} className="space-y-4">
+            <input
+              type="text"
+              placeholder="Name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500"
+            />
+            <input
+              type="text"
+              placeholder="Barcode"
+              value={formData.barcode}
+              onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
+              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500"
+            />
+            <input
+              type="text"
+              placeholder="Class Year (optional)"
+              value={formData.class_year}
+              onChange={(e) => setFormData({ ...formData, class_year: e.target.value })}
+              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500"
+            />
+            <select
+              value={formData.role}
+              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white focus:outline-none focus:border-emerald-500"
+            >
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+              <option value="staff">Staff</option>
+            </select>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              type="submit"
+              className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 rounded font-semibold transition"
+            >
+              ✓ Add User
+            </motion.button>
+          </form>
+        </motion.div>
+      )}
+
+      {loading ? (
+        <p className="text-slate-400">Loading users...</p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {users.map(user => (
+            <motion.div
+              key={user.id}
+              whileHover={{ y: -2 }}
+              className="bg-slate-800 border border-slate-700 rounded-lg p-4"
+            >
+              <h3 className="font-semibold text-lg mb-2">{user.name}</h3>
+              <p className="text-sm text-slate-400 mb-1">Barcode: {user.barcode || 'N/A'}</p>
+              <p className="text-sm text-slate-400 mb-1">Role: {user.role}</p>
+              {user.class_year && <p className="text-sm text-slate-400 mb-3">Class: {user.class_year}</p>}
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                onClick={() => handleDeleteUser(user.id)}
+                className="w-full py-2 text-sm bg-red-600 hover:bg-red-500 rounded transition"
+              >
+                🗑️ Delete
+              </motion.button>
+            </motion.div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
