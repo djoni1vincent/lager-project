@@ -65,18 +65,15 @@ export default function AdminItems() {
         setItems([...items, newItem]);
         setFormData({ name: '', barcode: '', category: '', location: '', description: '', quantity: 1 });
         setShowAddForm(false);
-        alert('Item added!');
-      } else {
-        const err = await res.json();
-        alert('Error: ' + err.error);
+        alert('Feil: ' + err.error);
       }
     } catch (err) {
-      alert('Error adding item');
+      alert('Feil ved tillegg av gjenstand');
     }
   }
 
   async function handleDeleteItem(itemId) {
-    if (!confirm('Delete this item?')) return;
+    if (!confirm('Slette denne gjenstanden?')) return;
 
     try {
       const res = await fetch(`/admin/items/${itemId}`, {
@@ -84,34 +81,34 @@ export default function AdminItems() {
       });
       if (res.ok) {
         setItems(items.filter(i => i.id !== itemId));
-        alert('Item deleted');
+        alert('Gjenstand slettet');
       } else {
         const err = await res.json();
-        alert('Error: ' + err.error);
+        alert('Feil: ' + err.error);
       }
     } catch (err) {
-      alert('Error deleting item');
+      alert('Feil ved sletting av gjenstand');
     }
   }
 
   return (
     <div>
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">📦 Item Management</h1>
+        <h1 className="text-3xl font-bold">📦 Vareadministrasjon</h1>
         <div className="space-x-2">
           <motion.button
             whileHover={{ scale: 1.05 }}
             onClick={() => setShowAddForm(!showAddForm)}
             className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg transition"
           >
-            {showAddForm ? 'Cancel' : '➕ Add Item'}
+            {showAddForm ? 'Avbryt' : '➕ Legg til gjenstand'}
           </motion.button>
           <motion.button
             whileHover={{ scale: 1.05 }}
             onClick={() => navigate('/admin')}
             className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition"
           >
-            ← Back
+            ← Tilbake
           </motion.button>
         </div>
       </div>
@@ -119,23 +116,23 @@ export default function AdminItems() {
       {/* Filters */}
       <div className="mb-6 flex flex-col md:flex-row md:items-end gap-4">
         <div className="flex-1">
-          <label className="block text-sm text-slate-300 mb-1">Search</label>
+          <label className="block text-sm text-slate-300 mb-1">Søk</label>
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Name or barcode..."
+            placeholder="Navn eller strekkode..."
             className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
           />
         </div>
         <div>
-          <label className="block text-sm text-slate-300 mb-1">Category</label>
+          <label className="block text-sm text-slate-300 mb-1">Kategori</label>
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
             className="px-3 py-2 bg-slate-800 border border-slate-700 rounded text-white focus:outline-none focus:border-emerald-500"
           >
-            <option value="all">All</option>
+            <option value="all">Alle</option>
             {categories.map((cat) => (
               <option key={cat} value={cat}>{cat}</option>
             ))}
@@ -152,7 +149,7 @@ export default function AdminItems() {
           <form onSubmit={handleAddItem} className="space-y-4">
             <input
               type="text"
-              placeholder="Item Name"
+              placeholder="Gjenstandsnavn"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
@@ -160,27 +157,27 @@ export default function AdminItems() {
             />
             <input
               type="text"
-              placeholder="Barcode"
+              placeholder="Strekkode"
               value={formData.barcode}
               onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
               className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500"
             />
             <input
               type="text"
-              placeholder="Category"
+              placeholder="Kategori"
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
               className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500"
             />
             <input
               type="text"
-              placeholder="Location"
+              placeholder="Plassering"
               value={formData.location}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
               className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500"
             />
             <textarea
-              placeholder="Description"
+              placeholder="Beskrivelse"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500"
@@ -188,7 +185,7 @@ export default function AdminItems() {
             />
             <input
               type="number"
-              placeholder="Quantity"
+              placeholder="Antall"
               value={formData.quantity}
               onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) })}
               className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500"
@@ -198,14 +195,14 @@ export default function AdminItems() {
               type="submit"
               className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 rounded font-semibold transition"
             >
-              ✓ Add Item
+              ✓ Legg til gjenstand
             </motion.button>
           </form>
         </motion.div>
       )}
 
       {loading ? (
-        <p className="text-slate-400">Loading items...</p>
+        <p className="text-slate-400">Laster inn gjenstander...</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredItems.map(item => (
@@ -215,24 +212,24 @@ export default function AdminItems() {
               className="bg-slate-800 border border-slate-700 rounded-lg p-4"
             >
               <h3 className="font-semibold text-lg mb-2">{item.name}</h3>
-              <p className="text-sm text-slate-400 mb-1">Barcode: {item.barcode || 'N/A'}</p>
-              <p className="text-sm text-slate-400 mb-1">Category: {item.category || 'N/A'}</p>
-              <p className="text-sm text-slate-400 mb-1">Location: {item.location || 'N/A'}</p>
-              <p className="text-sm text-emerald-400 font-semibold mb-3">Qty: {item.quantity}</p>
+              <p className="text-sm text-slate-400 mb-1">Strekkode: {item.barcode || 'Ikke tilgjengelig'}</p>
+              <p className="text-sm text-slate-400 mb-1">Kategori: {item.category || 'Ikke tilgjengelig'}</p>
+              <p className="text-sm text-slate-400 mb-1">Plassering: {item.location || 'Ikke tilgjengelig'}</p>
+              <p className="text-sm text-emerald-400 font-semibold mb-3">Antall: {item.quantity}</p>
               <div className="flex gap-2 mt-2">
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   onClick={() => navigate(`/admin/items/${item.id}`)}
                   className="flex-1 py-2 text-sm bg-slate-700 hover:bg-slate-600 rounded transition"
                 >
-                  ✏️ Details
+                  ✏️ Detaljer
                 </motion.button>
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   onClick={() => handleDeleteItem(item.id)}
                   className="flex-1 py-2 text-sm bg-red-600 hover:bg-red-500 rounded transition"
                 >
-                  🗑️ Delete
+                  🗑️ Slett
                 </motion.button>
               </div>
             </motion.div>

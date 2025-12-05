@@ -10,7 +10,7 @@ export default function ScanResultModal({ result, onClose, onAction }) {
 
   async function handleTakeLoan() {
     if (!selectedItem || !dueDate) {
-      setError('Please select item and due date');
+      setError('Vennligst velg gjenstand og forfallsdato');
       return;
     }
 
@@ -30,10 +30,10 @@ export default function ScanResultModal({ result, onClose, onAction }) {
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || 'Failed to create loan');
+        throw new Error(err.error || 'Kunne ikke opprette lån');
       }
 
-      alert(`✓ Loan created! Item due on ${dueDate}`);
+      alert(`✓ Lån opprettet! Gjenstanden forfaller den ${dueDate}`);
       onAction?.();
       onClose();
     } catch (err) {
@@ -56,10 +56,10 @@ export default function ScanResultModal({ result, onClose, onAction }) {
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || 'Failed to return loan');
+        throw new Error(err.error || 'Kunne ikke returnere lån');
       }
 
-      alert('✓ Item returned!');
+      alert('✓ Gjenstanden returnert!');
       onAction?.();
       onClose();
     } catch (err) {
@@ -101,28 +101,28 @@ export default function ScanResultModal({ result, onClose, onAction }) {
           {result.type === 'item' && (
             <div>
               <div className="mb-4">
-                <p className="text-slate-400 mb-2">Barcode: {result.item.barcode || 'N/A'}</p>
+                <p className="text-slate-400 mb-2">Strekkode: {result.item.barcode || 'Ikke tilgjengelig'}</p>
                 {result.item.description && <p className="text-slate-300 mb-2">{result.item.description}</p>}
-                <p className="text-sm text-slate-500">Location: {result.item.location || 'N/A'}</p>
+                <p className="text-sm text-slate-500">Plassering: {result.item.location || 'Ikke tilgjengelig'}</p>
               </div>
 
               {result.loaned ? (
                 <div className="bg-sky-900/30 border border-sky-700 rounded p-4 mb-4">
-                  <p className="font-semibold text-sky-300 mb-2">Currently loaned to: {result.loaned_to.name}</p>
-                  <p className="text-sm text-slate-300 mb-4">Due date: {result.loan.due_date}</p>
+                  <p className="font-semibold text-sky-300 mb-2">For øyeblikket utlånt til: {result.loaned_to.name}</p>
+                  <p className="text-sm text-slate-300 mb-4">Forfallsdato: {result.loan.due_date}</p>
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     onClick={() => handleReturnLoan(result.loan.id)}
                     disabled={loading}
                     className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-600 rounded font-semibold transition"
                   >
-                    {loading ? '⏳ Processing...' : '✓ Return Item'}
+                    {loading ? '⏳ Behandler...' : '✓ Returner gjenstand'}
                   </motion.button>
                 </div>
               ) : (
                 <div className="bg-emerald-900/30 border border-emerald-700 rounded p-4 mb-4">
-                  <p className="font-semibold text-emerald-300 mb-4">Item is available!</p>
-                  <p className="text-slate-400 mb-4">Scan user barcode to borrow this item</p>
+                  <p className="font-semibold text-emerald-300 mb-4">Gjenstanden er tilgjengelig!</p>
+                  <p className="text-slate-400 mb-4">Skann brukerstrekkode for å låne denne gjenstanden</p>
                 </div>
               )}
             </div>
@@ -132,20 +132,20 @@ export default function ScanResultModal({ result, onClose, onAction }) {
           {result.type === 'user' && (
             <div>
               <div className="mb-4">
-                <p className="text-slate-400 mb-2">Barcode: {result.user.barcode}</p>
-                {result.user.class_year && <p className="text-slate-400">Class: {result.user.class_year}</p>}
+                <p className="text-slate-400 mb-2">Strekkode: {result.user.barcode}</p>
+                {result.user.class_year && <p className="text-slate-400">Klasse: {result.user.class_year}</p>}
               </div>
 
               {/* Active loans */}
               {result.active_loans.length > 0 && (
                 <div className="mb-6">
-                  <h3 className="font-semibold text-sky-400 mb-3">Active Loans ({result.active_loans.length})</h3>
+                  <h3 className="font-semibold text-sky-400 mb-3">Aktive lån ({result.active_loans.length})</h3>
                   <div className="space-y-2 max-h-40 overflow-y-auto">
                     {result.active_loans.map(loan => (
                       <div key={loan.id} className="bg-slate-700/50 rounded p-3 flex justify-between items-center">
                         <div>
                           <p className="font-medium">{loan.item_name}</p>
-                          <p className="text-sm text-slate-400">Due: {loan.due_date}</p>
+                          <p className="text-sm text-slate-400">Forfaller: {loan.due_date}</p>
                         </div>
                         <motion.button
                           whileHover={{ scale: 1.05 }}
@@ -153,7 +153,7 @@ export default function ScanResultModal({ result, onClose, onAction }) {
                           disabled={loading}
                           className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-600 rounded text-sm transition"
                         >
-                          {loading ? '...' : 'Return'}
+                          {loading ? '...' : 'Returner'}
                         </motion.button>
                       </div>
                     ))}
@@ -163,14 +163,14 @@ export default function ScanResultModal({ result, onClose, onAction }) {
 
               {/* Take new loan */}
               <div className="border-t border-slate-700 pt-6">
-                <h3 className="font-semibold text-emerald-400 mb-4">Borrow New Item</h3>
+                <h3 className="font-semibold text-emerald-400 mb-4">Lån ny gjenstand</h3>
                 {step === 'view' && (
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     onClick={() => setStep('selectItem')}
                     className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 rounded font-semibold transition"
                   >
-                    📦 Select Item to Borrow
+                    📦 Velg gjenstand å låne
                   </motion.button>
                 )}
 
@@ -178,10 +178,10 @@ export default function ScanResultModal({ result, onClose, onAction }) {
                   <div className="space-y-3">
                     <input
                       type="text"
-                      placeholder="Search item name or barcode..."
+                      placeholder="Søk etter gjenstandsnavn eller strekkode..."
                       className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500"
                     />
-                    <p className="text-slate-400 text-sm">Or scan item barcode directly</p>
+                    <p className="text-slate-400 text-sm">Eller skann gjenstandens strekkode direkte</p>
                   </div>
                 )}
               </div>
@@ -191,9 +191,9 @@ export default function ScanResultModal({ result, onClose, onAction }) {
           {/* Unknown barcode */}
           {result.type === 'unknown' && (
             <div className="bg-red-900/30 border border-red-700 rounded p-4">
-              <p className="text-red-300 font-semibold mb-2">❌ Barcode not found</p>
-              <p className="text-sm text-slate-400">"{result.barcode}" is not registered in the system.</p>
-              <p className="text-sm text-slate-500 mt-2">Contact admin to add this item or user.</p>
+              <p className="text-red-300 font-semibold mb-2">❌ Strekkode ikke funnet</p>
+              <p className="text-sm text-slate-400">"{result.barcode}" er ikke registrert i systemet.</p>
+              <p className="text-sm text-slate-500 mt-2">Kontakt administrator for å legge til denne gjenstanden eller brukeren.</p>
             </div>
           )}
 

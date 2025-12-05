@@ -65,8 +65,8 @@ export default function HomePage() {
     <div className="max-w-6xl mx-auto px-4 py-8">
       {/* Header section */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-12">
-        <h1 className="text-4xl font-bold mb-2">📚 Lager System</h1>
-        <p className="text-slate-300">Scan a barcode to borrow or return items</p>
+        <h1 className="text-4xl font-bold mb-2">📚 Lagersystem</h1>
+        <p className="text-slate-300">Skann en strekkode for å låne eller returnere gjenstander</p>
       </motion.div>
 
       {/* Top stats */}
@@ -78,15 +78,15 @@ export default function HomePage() {
       >
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
           <div className="text-3xl font-bold text-emerald-400">{items.length}</div>
-          <div className="text-slate-300">Total Items</div>
+          <div className="text-slate-300">Totalt antall gjenstander</div>
         </div>
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
           <div className="text-3xl font-bold text-sky-400">{activeLoansCount}</div>
-          <div className="text-slate-300">Active Loans</div>
+          <div className="text-slate-300">Aktive lån</div>
         </div>
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
           <div className="text-3xl font-bold text-emerald-500">{availableItems.length}</div>
-          <div className="text-slate-300">Available Now</div>
+          <div className="text-slate-300">Tilgjengelig nå</div>
         </div>
       </motion.div>
 
@@ -111,13 +111,13 @@ export default function HomePage() {
           onClick={() => navigate('/admin/login')}
           className="px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg transition mr-4"
         >
-          🔐 Admin Login
+          🔐 Admin Pålogging
         </button>
         <button
           onClick={() => navigate('/scan')}
           className="px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg transition"
         >
-          🗂️ Navigate by Category
+          🗂️ Naviger etter kategori
         </button>
       </motion.div>
 
@@ -129,12 +129,12 @@ export default function HomePage() {
         className="mb-8 flex flex-col md:flex-row md:items-end gap-4"
       >
         <div className="flex-1">
-          <label className="block text-sm text-slate-300 mb-1">Search</label>
+          <label className="block text-sm text-slate-300 mb-1">Søk</label>
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Name or barcode..."
+            placeholder="Navn eller strekkode..."
             className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
           />
         </div>
@@ -145,19 +145,19 @@ export default function HomePage() {
             onChange={(e) => setStatusFilter(e.target.value)}
             className="px-3 py-2 bg-slate-800 border border-slate-700 rounded text-white focus:outline-none focus:border-emerald-500"
           >
-            <option value="all">All</option>
-            <option value="available">Available</option>
-            <option value="loaned">Loaned</option>
+            <option value="all">Alle</option>
+            <option value="available">Tilgjengelig</option>
+            <option value="loaned">Utlånt</option>
           </select>
         </div>
         <div>
-          <label className="block text-sm text-slate-300 mb-1">Category</label>
+          <label className="block text-sm text-slate-300 mb-1">Kategori</label>
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
             className="px-3 py-2 bg-slate-800 border border-slate-700 rounded text-white focus:outline-none focus:border-emerald-500"
           >
-            <option value="all">All</option>
+            <option value="all">Alle</option>
             {categories.map((cat) => (
               <option key={cat} value={cat}>{cat}</option>
             ))}
@@ -173,9 +173,9 @@ export default function HomePage() {
       >
         {/* Available items */}
         <div className="mb-12">
-          <h2 className="text-2xl font-bold mb-6 text-emerald-400">✓ Available Items</h2>
+          <h2 className="text-2xl font-bold mb-6 text-emerald-400">✓ Tilgjengelige gjenstander</h2>
           {availableItems.length === 0 ? (
-            <p className="text-slate-400">No items available right now.</p>
+            <p className="text-slate-400">Ingen gjenstander tilgjengelig akkurat nå.</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {availableItems.map(item => (
@@ -191,9 +191,9 @@ export default function HomePage() {
 
         {/* Loaned items */}
         <div>
-          <h2 className="text-2xl font-bold mb-6 text-sky-400">🔄 Currently Loaned</h2>
+          <h2 className="text-2xl font-bold mb-6 text-sky-400">🔄 For tiden utlånt</h2>
           {loanedItems.length === 0 ? (
-            <p className="text-slate-400">No loaned items.</p>
+            <p className="text-slate-400">Ingen utlånte gjenstander.</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {loanedItems.map(item => (

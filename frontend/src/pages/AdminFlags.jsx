@@ -23,11 +23,11 @@ export default function AdminFlags() {
         setFlags(data);
       } else {
         const txt = await res.text();
-        setError(txt || 'Failed to load flags');
+        setError(txt || 'Kunne ikke laste flagg');
       }
     } catch (err) {
       console.error('Error fetching flags:', err);
-      setError('Error fetching flags');
+      setError('Feil ved henting av flagg');
     } finally {
       setLoading(false);
     }
@@ -35,7 +35,7 @@ export default function AdminFlags() {
 
   async function handleResolveFlag(flagId) {
     try {
-      const notes = window.prompt('Опишите, что было сделано (опционально):', '');
+      const notes = window.prompt('Beskriv hva som ble gjort (valgfritt):', '');
       const res = await fetch(`/admin/flags/${flagId}/resolve`, {
         method: 'PUT',
         headers: {
@@ -45,10 +45,10 @@ export default function AdminFlags() {
       });
       if (res.ok) {
         setFlags(flags.filter(f => f.id !== flagId));
-        alert('Flag resolved');
+        alert('Flagg løst');
       }
     } catch (err) {
-      alert('Error resolving flag');
+      alert('Feil ved løsning av flagg');
     }
   }
 
@@ -57,13 +57,13 @@ export default function AdminFlags() {
   return (
     <div>
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">🚩 System Flags</h1>
+        <h1 className="text-3xl font-bold">🚩 Systemflagg</h1>
         <motion.button
           whileHover={{ scale: 1.05 }}
           onClick={() => navigate('/admin')}
           className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition"
         >
-          ← Back
+          ← Tilbake
         </motion.button>
       </div>
 
@@ -72,10 +72,10 @@ export default function AdminFlags() {
       )}
 
       {loading ? (
-        <p className="text-slate-400">Loading flags...</p>
+        <p className="text-slate-400">Laster inn flagg...</p>
       ) : unresolvedFlags.length === 0 ? (
         <div className="bg-emerald-900/30 border border-emerald-700 rounded-lg p-6 text-center">
-          <p className="text-emerald-300 font-semibold">✓ No flags! System is running smoothly.</p>
+          <p className="text-emerald-300 font-semibold">✓ Ingen flagg! Systemet kjører knirkefritt.</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -92,18 +92,22 @@ export default function AdminFlags() {
                     {flag.flag_type === 'missing_barcode' && '🏷️'}
                     {flag.flag_type === 'overdue' && '⏰'}
                     {!['defect', 'missing_barcode', 'overdue'].includes(flag.flag_type) && '⚠️'}
-                    {' '}{flag.flag_type}
+                    {' '}
+                    {flag.flag_type === 'defect' ? 'Defekt' :
+                     flag.flag_type === 'missing_barcode' ? 'Manglende strekkode' :
+                     flag.flag_type === 'overdue' ? 'Forfalt' :
+                     'Ukjent'}
                   </h3>
                   {flag.message && (
                     <p className="text-slate-300 mb-2">{flag.message}</p>
                   )}
                   {flag.resolution_notes && (
                     <p className="text-xs text-emerald-300 mb-1">
-                      Решение: {flag.resolution_notes}
+                      Løsning: {flag.resolution_notes}
                     </p>
                   )}
                   <p className="text-sm text-slate-500">
-                    Item: {flag.item_id || 'N/A'} | User: {flag.user_id || 'N/A'} | {new Date(flag.created_at).toLocaleString()}
+                    Gjenstand: {flag.item_id || 'Ikke tilgjengelig'} | Bruker: {flag.user_id || 'Ikke tilgjengelig'} | {new Date(flag.created_at).toLocaleString()}
                   </p>
                 </div>
                 <motion.button
@@ -111,7 +115,7 @@ export default function AdminFlags() {
                   onClick={() => handleResolveFlag(flag.id)}
                   className="ml-4 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded transition whitespace-nowrap"
                 >
-                  ✓ Resolve
+                  ✓ Løs
                 </motion.button>
               </div>
             </motion.div>

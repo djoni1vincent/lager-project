@@ -40,7 +40,7 @@ function AdminOverview() {
   return (
     <div>
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">⚙️ Admin Dashboard</h1>
+        <h1 className="text-3xl font-bold">⚙️ Administrasjonspanel</h1>
         <button
           onClick={() => {
             logout();
@@ -48,34 +48,34 @@ function AdminOverview() {
           }}
           className="px-4 py-2 bg-red-600 hover:bg-red-500 rounded-lg transition"
         >
-          Logout
+          Logg ut
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <AdminCard
-          title="Users"
+          title="Brukere"
           icon="👥"
           onClick={() => navigate('/admin/users')}
-          description="Manage users"
+          description="Administrer brukere"
         />
         <AdminCard
-          title="Items"
+          title="Gjenstander"
           icon="📦"
           onClick={() => navigate('/admin/items')}
-          description="Manage items"
+          description="Administrer gjenstander"
         />
         <AdminCard
-          title="Flags"
+          title="Flagg"
           icon="🚩"
           onClick={() => navigate('/admin/flags')}
-          description="View issues"
+          description="Se problemer"
         />
         <AdminCard
-          title="Settings"
+          title="Innstillinger"
           icon="⚙️"
-          onClick={() => alert('Settings coming soon')}
-          description="System settings"
+          onClick={() => alert('Innstillinger kommer snart')}
+          description="Systeminnstillinger"
         />
       </div>
     </div>

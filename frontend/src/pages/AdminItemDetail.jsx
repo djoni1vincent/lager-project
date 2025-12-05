@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
-// Детальная страница предмета для админа: редактирование + лог всех займов.
+// Detaljert vareside for administrator: redigering + logg over alle utlån.
 export default function AdminItemDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -32,7 +32,7 @@ export default function AdminItemDetail() {
       const res = await fetch(`/admin/items/${id}`);
       const data = await res.json();
       if (!res.ok) {
-        setMsg(data.error || 'Failed to load item');
+        setMsg(data.error || 'Kunne ikke laste gjenstand');
         return;
       }
       setItem(data.item);
@@ -66,10 +66,10 @@ export default function AdminItemDetail() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setMsg(data.error || 'Failed to save item');
+        setMsg(data.error || 'Kunne ikke lagre gjenstand');
       } else {
         setItem(data);
-        setMsg('Сохранено');
+        setMsg('Lagret');
       }
     } catch (e) {
       setMsg(String(e));
@@ -79,7 +79,7 @@ export default function AdminItemDetail() {
   }
 
   if (loading && !item) {
-    return <div className="text-slate-200 p-6">Загрузка...</div>;
+    return <div className="text-slate-200 p-6">Laster inn...</div>;
   }
 
   if (!item) {
@@ -89,9 +89,9 @@ export default function AdminItemDetail() {
           onClick={() => navigate(-1)}
           className="px-3 py-1 bg-slate-800 border border-slate-600 rounded text-sm"
         >
-          ← Назад
+          ← Tilbake
         </button>
-        <div className="mt-4 text-red-300">{msg || 'Предмет не найден'}</div>
+        <div className="mt-4 text-red-300">{msg || 'Gjenstand ikke funnet'}</div>
       </div>
     );
   }
@@ -102,14 +102,14 @@ export default function AdminItemDetail() {
         <div>
           <h1 className="text-3xl font-bold text-white mb-1">📦 {item.name}</h1>
           <p className="text-slate-400 text-sm">
-            ID: {item.id} · Штрихкод: {item.barcode || '—'}
+            ID: {item.id} · Strekkode: {item.barcode || '—'}
           </p>
         </div>
         <button
           onClick={() => navigate('/admin/items')}
           className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm"
         >
-          ← Назад к списку
+          ← Tilbake til liste
         </button>
       </div>
 
@@ -120,12 +120,12 @@ export default function AdminItemDetail() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Форма редактирования */}
+        {/* Redigeringsskjema */}
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-5">
-          <h2 className="text-lg font-semibold mb-4">Редактировать предмет</h2>
+          <h2 className="text-lg font-semibold mb-4">Rediger gjenstand</h2>
           <form onSubmit={handleSave} className="space-y-3 text-sm">
             <div>
-              <label className="block mb-1 text-slate-300">Название</label>
+              <label className="block mb-1 text-slate-300">Navn</label>
               <input
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -134,7 +134,7 @@ export default function AdminItemDetail() {
               />
             </div>
             <div>
-              <label className="block mb-1 text-slate-300">Штрихкод</label>
+              <label className="block mb-1 text-slate-300">Strekkode</label>
               <input
                 value={form.barcode}
                 onChange={(e) => setForm({ ...form, barcode: e.target.value })}
@@ -143,7 +143,7 @@ export default function AdminItemDetail() {
             </div>
             <div className="flex gap-2">
               <div className="flex-1">
-                <label className="block mb-1 text-slate-300">Категория</label>
+                <label className="block mb-1 text-slate-300">Kategori</label>
                 <input
                   value={form.category}
                   onChange={(e) => setForm({ ...form, category: e.target.value })}
@@ -151,7 +151,7 @@ export default function AdminItemDetail() {
                 />
               </div>
               <div className="flex-1">
-                <label className="block mb-1 text-slate-300">Локация</label>
+                <label className="block mb-1 text-slate-300">Plassering</label>
                 <input
                   value={form.location}
                   onChange={(e) => setForm({ ...form, location: e.target.value })}
@@ -160,7 +160,7 @@ export default function AdminItemDetail() {
               </div>
             </div>
             <div>
-              <label className="block mb-1 text-slate-300">Описание</label>
+              <label className="block mb-1 text-slate-300">Beskrivelse</label>
               <textarea
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -170,7 +170,7 @@ export default function AdminItemDetail() {
             </div>
             <div className="flex gap-2">
               <div>
-                <label className="block mb-1 text-slate-300">Количество</label>
+                <label className="block mb-1 text-slate-300">Antall</label>
                 <input
                   type="number"
                   min={0}
@@ -182,17 +182,17 @@ export default function AdminItemDetail() {
                 />
               </div>
               <div className="flex-1">
-                <label className="block mb-1 text-slate-300">Статус</label>
+                <label className="block mb-1 text-slate-300">Status</label>
                 <input
                   value={form.status}
                   onChange={(e) => setForm({ ...form, status: e.target.value })}
-                  placeholder="available / maintenance / lost..."
+                  placeholder="tilgjengelig / vedlikehold / tapt..."
                   className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white focus:outline-none focus:border-emerald-500"
                 />
               </div>
             </div>
             <div>
-              <label className="block mb-1 text-slate-300">Заметки (служебные)</label>
+              <label className="block mb-1 text-slate-300">Merknader (interne)</label>
               <textarea
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
@@ -206,7 +206,7 @@ export default function AdminItemDetail() {
                 disabled={saving}
                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded text-sm font-semibold disabled:bg-slate-600"
               >
-                {saving ? 'Сохранение...' : 'Сохранить изменения'}
+                {saving ? 'Lagrer...' : 'Lagre endringer'}
               </button>
             </div>
           </form>
@@ -214,18 +214,18 @@ export default function AdminItemDetail() {
 
         {/* Лог займов */}
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-5">
-          <h2 className="text-lg font-semibold mb-3">История займов</h2>
+          <h2 className="text-lg font-semibold mb-3">Utlånshistorikk</h2>
           {loans.length === 0 ? (
-            <p className="text-slate-400 text-sm">Этот предмет ещё никто не брал.</p>
+            <p className="text-slate-400 text-sm">Ingen har lånt denne gjenstanden ennå.</p>
           ) : (
             <div className="max-h-96 overflow-y-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-slate-400 border-b border-slate-700">
-                    <th className="py-1 pr-2">Пользователь</th>
-                    <th className="py-1 pr-2">Дата выдачи</th>
-                    <th className="py-1 pr-2">До</th>
-                    <th className="py-1">Возврат</th>
+                    <th className="py-1 pr-2">Bruker</th>
+                    <th className="py-1 pr-2">Utlånsdato</th>
+                    <th className="py-1 pr-2">Til</th>
+                    <th className="py-1">Retur</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -240,7 +240,7 @@ export default function AdminItemDetail() {
                         {l.return_date ? (
                           <span className="text-emerald-300">{l.return_date}</span>
                         ) : (
-                          <span className="text-amber-300">в аренде</span>
+                          <span className="text-amber-300">utlånt</span>
                         )}
                       </td>
                     </tr>

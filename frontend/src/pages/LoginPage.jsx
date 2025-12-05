@@ -15,7 +15,7 @@ function LoginPage() {
         await login(username.trim(), password);
         navigate("/dashboard");
       } catch (e) {
-        alert("Admin login failed: " + (e.message || e));
+        alert("Admin pålogging mislyktes: " + (e.message || e));
       }
       return;
     }
@@ -53,14 +53,14 @@ function LoginPage() {
         onChange={(e) => setUsername(e.target.value)}
         className="bg-gray-200 mt-6 text-center p-2 rounded-xl"
         type="text"
-        placeholder="Username"
+        placeholder="Brukernavn"
       /><br />
       <input
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         className="bg-gray-200 mt-4 text-center p-2 rounded-xl"
         type="password"
-        placeholder="Password (for admin)"
+        placeholder="Passord (for admin)"
       /><br />
       <button
         onClick={handleLogin}

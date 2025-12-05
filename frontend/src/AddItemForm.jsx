@@ -26,7 +26,7 @@ export default function AddItemForm({ onNewItem }) {
         const txt = await res.text();
         let errBody = null;
         try { errBody = JSON.parse(txt); } catch { errBody = txt; }
-        console.error("Add item failed:", res.status, errBody);
+        console.error("Kunne ikke legge til gjenstand:", res.status, errBody);
         alert("Kunne ikke legge til produkt: " + (errBody?.error || errBody || res.status));
         return;
       }
@@ -34,17 +34,17 @@ export default function AddItemForm({ onNewItem }) {
       const data = await res.json();
       console.log("Added:", data);
 
-      // Сбрасываем форму
+      // Tilbakestiller skjema
       setName("");
       setDescription("");
       setLocation("");
       setQuantity(1);
       setBarcode("");
 
-      // Обновляем список товаров в Dashboard — backend возвращает объект
+      // Oppdaterer vareliste i Dashboard – backend returnerer objekt
       onNewItem && onNewItem(data);
     } catch (err) {
-      console.error("Error adding item:", err);
+      console.error("Feil ved tillegg av gjenstand:", err);
       alert("Feil ved kommunikasjon med serveren. Sjekk at backend kjører.");
     }
   };

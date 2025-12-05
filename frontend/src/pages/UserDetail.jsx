@@ -15,7 +15,7 @@ export default function UserDetail() {
       setLoading(true);
       try {
           const res = await fetch(`/users/${id}`, { credentials: "include" });
-        if (!res.ok) throw new Error("Failed to fetch user");
+        if (!res.ok) throw new Error("Kunne ikke hente bruker");
         const data = await res.json();
         setUser(data.user);
         setLoans(data.loans || []);
@@ -83,7 +83,7 @@ export default function UserDetail() {
               <input type="text" className="border p-2 rounded w-full" value={form.name} onChange={e => setForm({...form, name: e.target.value})} required />
               <div className="flex gap-2">
                 <select value={form.role} onChange={e => setForm({...form, role: e.target.value})} className="border p-2 rounded">
-                  <option value="user">User</option>
+                  <option value="user">Bruker</option>
                   <option value="admin">Admin</option>
                 </select>
                 <input type="text" placeholder="Klasse/År" value={form.class_year} onChange={e => setForm({...form, class_year: e.target.value})} className="border p-2 rounded flex-1" />
@@ -95,7 +95,7 @@ export default function UserDetail() {
 
               <div className="flex gap-2">
                 <button type="submit" disabled={saving} className="bg-blue-600 text-white px-4 py-2 rounded">{saving ? 'Lagrer...' : 'Lagre'}</button>
-                <button type="button" onClick={() => { setForm({ name: user.name || '', role: user.role || 'user', class_year: user.class_year || '', username: user.username || '', password: user.password || '', qr_code: user.qr_code || '' }); }} className="px-4 py-2 border rounded">Reset</button>
+                <button type="button" onClick={() => { setForm({ name: user.name || '', role: user.role || 'user', class_year: user.class_year || '', username: user.username || '', password: user.password || '', qr_code: user.qr_code || '' }); }} className="px-4 py-2 border rounded">Tilbakestill</button>
               </div>
             </form>
           </div>
@@ -108,7 +108,7 @@ export default function UserDetail() {
               <table className="w-full text-left">
                 <thead>
                   <tr>
-                    <th className="p-2">Produkt</th>
+                    <th className="p-2">Gjenstand</th>
                     <th className="p-2">Lånedato</th>
                     <th className="p-2">Til dato</th>
                   </tr>

@@ -53,7 +53,7 @@ export default function AddUserForm({ onNewUser }) {
       setPassword("");
       setBarcode("");
     } catch (err) {
-      console.error("Error creating user:", err);
+      console.error("Feil ved opprettelse av bruker:", err);
       alert("Feil ved kommunikasjon med serveren");
     } finally {
       setLoading(false);
@@ -74,7 +74,7 @@ export default function AddUserForm({ onNewUser }) {
 
       <div className="flex gap-2">
         <select value={role} onChange={(e) => setRole(e.target.value)} className="border p-2 rounded">
-          <option value="user">User</option>
+          <option value="user">Bruker</option>
           <option value="admin">Admin</option>
         </select>
         <input

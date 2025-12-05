@@ -12,7 +12,7 @@ export default function ScanBox({ onScanned }) {
   async function handleScan(e) {
     e.preventDefault();
     if (!barcode.trim()) {
-      setError('Please enter a barcode');
+      setError('Vennligst skriv inn en strekkode');
       return;
     }
 
@@ -26,7 +26,7 @@ export default function ScanBox({ onScanned }) {
         body: JSON.stringify({ barcode: barcode.trim() })
       });
 
-      if (!res.ok) throw new Error('Scan failed');
+      if (!res.ok) throw new Error('Skanning mislyktes');
       const data = await res.json();
       setScanResult(data);
       setBarcode('');
@@ -48,8 +48,8 @@ export default function ScanBox({ onScanned }) {
         className="bg-slate-800 border-2 border-slate-700 rounded-lg p-8 max-w-2xl mx-auto"
       >
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold mb-2">📱 Scan Barcode</h2>
-          <p className="text-slate-400">Scan item or user barcode</p>
+          <h2 className="text-2xl font-bold mb-2">📱 Skann strekkode</h2>
+          <p className="text-slate-400">Skann vare- eller brukerstrekkode</p>
         </div>
 
         <form onSubmit={handleScan} className="space-y-4">
@@ -62,7 +62,7 @@ export default function ScanBox({ onScanned }) {
               type="text"
               value={barcode}
               onChange={(e) => setBarcode(e.target.value)}
-              placeholder="Enter or scan barcode..."
+              placeholder="Skriv inn eller skann strekkode..."
               disabled={scanning}
               autoFocus
               className="w-full px-4 py-4 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-50"
@@ -86,12 +86,12 @@ export default function ScanBox({ onScanned }) {
             disabled={scanning}
             className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-600 disabled:cursor-not-allowed rounded-lg font-semibold transition"
           >
-            {scanning ? '🔍 Scanning...' : '✓ Scan'}
+            {scanning ? '🔍 Skanner...' : '✓ Skann'}
           </motion.button>
         </form>
 
         <div className="mt-6 text-center text-slate-400 text-sm">
-          <p>Focus on this box and scan any barcode</p>
+          <p>Fokuser på denne boksen og skann hvilken som helst strekkode</p>
         </div>
       </motion.div>
 

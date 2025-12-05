@@ -35,13 +35,13 @@ export default function AdminLoginPage() {
       >
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2">🔐 Admin Login</h1>
-            <p className="text-slate-400">Enter your credentials to manage the system</p>
+            <h1 className="text-3xl font-bold mb-2">🔐 Admin Pålogging</h1>
+            <p className="text-slate-400">Skriv inn dine legitimasjon for å administrere systemet</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-2 text-slate-300">Username</label>
+              <label className="block text-sm font-medium mb-2 text-slate-300">Brukernavn</label>
               <input
                 type="text"
                 value={username}
@@ -52,7 +52,7 @@ export default function AdminLoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2 text-slate-300">Password</label>
+              <label className="block text-sm font-medium mb-2 text-slate-300">Passord</label>
               <input
                 type="password"
                 value={password}
@@ -79,7 +79,7 @@ export default function AdminLoginPage() {
               disabled={loading}
               className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-600 rounded-lg font-semibold transition"
             >
-              {loading ? '⏳ Logging in...' : 'Login'}
+              {loading ? '⏳ Logger inn...' : 'Logg inn'}
             </motion.button>
           </form>
 
@@ -88,7 +88,7 @@ export default function AdminLoginPage() {
               onClick={() => navigate('/')}
               className="text-slate-400 hover:text-slate-300 transition"
             >
-              ← Back to home
+              ← Tilbake til hjem
             </button>
           </div>
         </div>

@@ -9,7 +9,7 @@ export default function ScanPage() {
   const [msg, setMsg] = useState("");
 
   async function handleScan() {
-    if (!barcode) return setMsg("Введите штрихкод или QR");
+    if (!barcode) return setMsg("Skriv inn strekkode eller QR");
     setLoading(true);
     setMsg("");
     try {
@@ -21,23 +21,23 @@ export default function ScanPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setMsg(data.error || "Ошибка сканирования");
+        setMsg(data.error || "Skanningsfeil");
         setLoading(false);
         return;
       }
 
       if (data.type === "user") {
         setCurrentUser(data.user);
-        setMsg(`Пользователь: ${data.user.name} (теперь просканируйте предмет)`);
+        setMsg(`Bruker: ${data.user.name} (skann nå vare)`);
         setScannedItem(null);
         setLoan(null);
       } else if (data.type === "item") {
         setScannedItem(data.item);
         setLoan(data.loan || null);
-        setMsg(`Найден предмет: ${data.item.name}`);
+        setMsg(`Vare funnet: ${data.item.name}`);
       } else {
         // unknown code: offer quick-create
-        setMsg("Код не найден. Можно создать новый предмет.");
+        setMsg("Kode ikke funnet. Kan opprette ny vare.");
         setScannedItem(null);
         setLoan(null);
       }
@@ -98,8 +98,8 @@ export default function ScanPage() {
   }, []);
 
   async function doLoan() {
-    if (!scannedItem) return setMsg("Сначала просканируйте предмет");
-    if (!currentUser) return setMsg("Сначала просканируйте пользователя для выдачи");
+    if (!scannedItem) return setMsg("Skann vare først");
+    if (!currentUser) return setMsg("Skann bruker for utlån først");
 
     // default due: 14 days from now
     const due = new Date();
@@ -116,10 +116,10 @@ export default function ScanPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setMsg(data.error || "Ошибка при создании займа");
+        setMsg(data.error || "Feil ved opprettelse av lån");
       } else {
         setLoan(data);
-        setMsg("Предмет выдан");
+        setMsg("Vare utlånt");
       }
     } catch (e) {
       setMsg(String(e));
@@ -128,7 +128,7 @@ export default function ScanPage() {
   }
 
   async function doReturn() {
-    if (!loan) return setMsg("Нет активного займа для возврата");
+    if (!loan) return setMsg("Ingen aktivt lån å returnere");
     setLoading(true);
     try {
       const res = await fetch(`/loans/${loan.id}/return`, {
@@ -138,10 +138,10 @@ export default function ScanPage() {
         body: JSON.stringify({ user_id: currentUser ? currentUser.id : null }),
       });
       const data = await res.json();
-      if (!res.ok) setMsg(data.error || "Ошибка при возврате");
+      if (!res.ok) setMsg(data.error || "Feil ved retur");
       else {
         setLoan(data);
-        setMsg("Предмет возвращён");
+        setMsg("Vare returnert");
       }
     } catch (e) {
       setMsg(String(e));
@@ -150,8 +150,8 @@ export default function ScanPage() {
   }
 
   async function doExtend() {
-    if (!loan) return setMsg("Нет активного займа для продления");
-    const newDue = prompt("Новая дата возврата (YYYY-MM-DD)", loan.due_date || "");
+    if (!loan) return setMsg("Ingen aktivt lån å forlenge");
+    const newDue = prompt("Ny returdato (YYYY-MM-DD)", loan.due_date || "");
     if (!newDue) return;
     setLoading(true);
     try {
@@ -162,10 +162,10 @@ export default function ScanPage() {
         body: JSON.stringify({ due_date: newDue, user_id: currentUser ? currentUser.id : null }),
       });
       const data = await res.json();
-      if (!res.ok) setMsg(data.error || "Ошибка при продлении");
+      if (!res.ok) setMsg(data.error || "Feil ved forlengelse");
       else {
         setLoan(data);
-        setMsg("Срок продлён");
+        setMsg("Frist forlenget");
       }
     } catch (e) {
       setMsg(String(e));
@@ -174,8 +174,8 @@ export default function ScanPage() {
   }
 
   async function doFlag() {
-    if (!scannedItem) return setMsg("Сначала просканируйте предмет для жалобы");
-    const desc = prompt("Короткое описание проблемы");
+    if (!scannedItem) return setMsg("Skann vare for klage først");
+    const desc = prompt("Kort problembeskrivelse");
     if (!desc) return;
     setLoading(true);
     try {
@@ -186,8 +186,8 @@ export default function ScanPage() {
         body: JSON.stringify({ item_id: scannedItem.id, description: desc, created_by: currentUser ? currentUser.id : null }),
       });
       const data = await res.json();
-      if (!res.ok) setMsg(data.error || "Не удалось отправить жалобу");
-      else setMsg("Жалоба отправлена, админы уведомлены (если настроено)");
+      if (!res.ok) setMsg(data.error || "Kunne ikke sende klage");
+      else setMsg("Klage sendt, administratorer varslet (hvis konfigurert)");
     } catch (e) {
       setMsg(String(e));
     }
@@ -195,8 +195,8 @@ export default function ScanPage() {
   }
 
   async function quickCreate() {
-    if (!barcode) return setMsg("Введите штрихкод для нового предмета");
-    const name = prompt("Название предмета", "");
+    if (!barcode) return setMsg("Skriv inn strekkode for ny vare");
+    const name = prompt("Varens navn", "");
     if (!name) return;
     setLoading(true);
     try {
@@ -207,10 +207,10 @@ export default function ScanPage() {
         body: JSON.stringify({ barcode, name, quantity: 1 }),
       });
       const data = await res.json();
-      if (!res.ok) setMsg(data.error || "Не удалось создать предмет");
+      if (!res.ok) setMsg(data.error || "Kunne ikke opprette vare");
       else {
         setScannedItem(data);
-        setMsg("Предмет создан и доступен");
+        setMsg("Vare opprettet og tilgjengelig");
       }
     } catch (e) {
       setMsg(String(e));
@@ -221,33 +221,33 @@ export default function ScanPage() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="bg-gray-800 rounded-lg shadow-lg p-6 mt-6 transition hover:shadow-xl">
-        <h2 className="text-2xl font-semibold mb-4">Сканер</h2>
+        <h2 className="text-2xl font-semibold mb-4">Skanner</h2>
 
         <div id="qr-reader" className="mb-4 rounded overflow-hidden" />
 
         <div className="mb-4">
         <input
           className="border p-2 w-full"
-          placeholder="Введите штрихкод или QR"
+          placeholder="Skriv inn strekkode eller QR"
           value={barcode}
           onChange={(e) => setBarcode(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleScan()}
         />
         <div className="flex gap-2 mt-2">
           <button className="px-4 py-2 bg-indigo-600 text-white rounded shadow" onClick={handleScan} disabled={loading}>
-            {loading ? "..." : "Сканировать"}
+            {loading ? "..." : "Skann"}
           </button>
           <button className="px-4 py-2 bg-gray-100 rounded" onClick={clearSession} disabled={loading}>
-            Сброс
+            Tilbakestill
           </button>
-          <button className="px-4 py-2 bg-green-600 text-white rounded" onClick={quickCreate} disabled={loading}>Создать предмет</button>
+          <button className="px-4 py-2 bg-green-600 text-white rounded" onClick={quickCreate} disabled={loading}>Opprett vare</button>
         </div>
       </div>
         {msg && <div className="mb-4 text-sm text-gray-700">{msg}</div>}
 
         {currentUser && (
           <div className="mb-4 p-3 border rounded bg-gray-50">
-            <strong>Текущий пользователь:</strong>
+            <strong>Gjeldende bruker:</strong>
             <div className="font-medium">{currentUser.name} {currentUser.class ? `— ${currentUser.class}` : ""}</div>
             <div className="text-xs text-gray-500">ID: {currentUser.id}</div>
           </div>
@@ -258,28 +258,27 @@ export default function ScanPage() {
             <div className="flex justify-between items-start">
               <div>
                 <div className="text-lg font-medium">{scannedItem.name}</div>
-                <div className="text-xs text-gray-500">Категория: {scannedItem.category || "-"} | Кол-во: {scannedItem.quantity}</div>
+                <div className="text-xs text-gray-500">Kategori: {scannedItem.category || "-"} | Antall: {scannedItem.quantity}</div>
               </div>
               <div className="text-right">
-                <Link to={`/items/${scannedItem.id}`} className="text-indigo-600 hover:underline text-sm">Open</Link>
+                <Link to={`/items/${scannedItem.id}`} className="text-indigo-600 hover:underline text-sm">Åpne</Link>
               </div>
             </div>
 
             {loan ? (
               <div className="mt-3">
-                <div className="text-sm">В аренде у: {loan.user_name || loan.user_id}</div>
-                <div className="text-sm">Срок до: {loan.due_date}</div>
+                <div className="text-sm">Utlånt til: {loan.user_name || loan.user_id}</div>
+                <div className="text-sm">Frist til: {loan.due_date}</div>
                 <div className="flex gap-2 mt-2">
-                  <button className="px-3 py-1 bg-green-600 text-white rounded" onClick={doReturn} disabled={loading}>Вернуть</button>
-                  <button className="px-3 py-1 bg-yellow-500 text-white rounded" onClick={doExtend} disabled={loading}>Продлить</button>
-                  <button className="px-3 py-1 bg-red-500 text-white rounded" onClick={doFlag} disabled={loading}>Пожаловаться</button>
+                  <button className="px-3 py-1 bg-green-600 text-white rounded" onClick={doReturn} disabled={loading}>Returner</button>
+                  <button className="px-3 py-1 bg-red-500 text-white rounded" onClick={doFlag} disabled={loading}>Rapportér</button>
                 </div>
               </div>
             ) : (
               <div className="mt-3">
-                <div className="text-sm text-green-700">Предмет доступен</div>
+                <div className="text-sm text-green-700">Vare tilgjengelig</div>
                 <div className="flex gap-2 mt-2">
-                  <button className="px-3 py-1 bg-indigo-600 text-white rounded" onClick={doLoan} disabled={loading}>Выдать</button>
+                  <button className="px-3 py-1 bg-indigo-600 text-white rounded" onClick={doLoan} disabled={loading}>Utlån</button>
                   <button className="px-3 py-1 bg-red-500 text-white rounded" onClick={doFlag} disabled={loading}>Пожаловаться</button>
                 </div>
               </div>

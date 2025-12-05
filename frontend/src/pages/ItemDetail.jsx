@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 
-// Публичная страница предмета: детали, история и возможность взять предмет по штрихкоду пользователя.
+// Offentlig gjenstandsside: detaljer, historikk og mulighet til å låne gjenstand med brukerstrekkode.
 export default function ItemDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -17,7 +17,7 @@ export default function ItemDetail() {
     try {
       const res = await fetch(`/items/${id}`);
       const data = await res.json();
-      if (!res.ok) setMsg(data.error || "Не удалось загрузить предмет");
+      if (!res.ok) setMsg(data.error || "Kunne ikke laste gjenstand");
       else {
         setItem(data);
         setMsg("");
@@ -29,9 +29,9 @@ export default function ItemDetail() {
 
   async function handleTakeItem() {
     if (!item) return;
-    const userBarcode = window.prompt("Штрихкод пользователя:");
+    const userBarcode = window.prompt("Brukerstrekkode:");
     if (!userBarcode) return;
-    const due = window.prompt("Дата возврата (YYYY-MM-DD):");
+    const due = window.prompt("Returdato (YYYY-MM-DD):");
     if (!due) return;
 
     setLoading(true);
@@ -48,9 +48,9 @@ export default function ItemDetail() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setMsg(data.error || "Не удалось создать займ");
+        setMsg(data.error || "Kunne ikke opprette lån");
       } else {
-        setMsg("Предмет выдан этому пользователю");
+        setMsg("Gjenstand utlånt til denne brukeren");
         await loadItem();
       }
     } catch (e) {
@@ -60,7 +60,7 @@ export default function ItemDetail() {
     }
   }
 
-  if (!item) return <div className="p-6 text-slate-200">Загрузка...</div>;
+  if (!item) return <div className="p-6 text-slate-200">Laster...</div>;
 
   return (
     <div className="p-6 max-w-3xl mx-auto text-slate-100">
@@ -71,13 +71,13 @@ export default function ItemDetail() {
             onClick={() => navigate(-1)}
             className="px-3 py-1 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-sm"
           >
-            ← Назад
+            ← Tilbake
           </button>
           <Link
             to="/scan"
             className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-sm"
           >
-            📷 Открыть сканер
+            📷 Åpne skanner
           </Link>
         </div>
       </div>
@@ -85,23 +85,23 @@ export default function ItemDetail() {
       <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-slate-800 p-4 rounded border border-slate-700">
           <div>
-            <strong>Штрихкод:</strong> {item.barcode || "—"}
+            <strong>Strekkode:</strong> {item.barcode || "—"}
           </div>
           <div>
-            <strong>Категория:</strong> {item.category || "—"}
+            <strong>Kategori:</strong> {item.category || "—"}
           </div>
           <div>
-            <strong>Локация:</strong> {item.location || "—"}
+            <strong>Plassering:</strong> {item.location || "—"}
           </div>
         </div>
         <div className="bg-slate-800 p-4 rounded border border-slate-700">
           <div>
-            <strong>Количество:</strong>{" "}
+            <strong>Antall:</strong>{" "}
             <span className="font-semibold">{item.quantity}</span>
           </div>
           {item.due_date && (
             <div className="mt-1 text-sm text-slate-300">
-              Ближайший срок возврата: {item.due_date}
+              Nærmeste returdato: {item.due_date}
             </div>
           )}
         </div>
@@ -114,16 +114,16 @@ export default function ItemDetail() {
       )}
 
       <div className="mb-6">
-        <h3 className="font-medium mb-2">Текущий статус</h3>
+        <h3 className="font-medium mb-2">Gjeldende status</h3>
         {item.active_loan ? (
           <div className="bg-sky-900/40 border border-sky-700 rounded p-3 text-sm">
             <div>
-              В аренде у: {item.active_loan.user_name || item.active_loan.user_id}
+              Utlånt til: {item.active_loan.user_name || item.active_loan.user_id}
             </div>
-            <div>До: {item.active_loan.due_date || "—"}</div>
+            <div>Til: {item.active_loan.due_date || "—"}</div>
           </div>
         ) : (
-          <div className="text-emerald-300 text-sm">Предмет свободен</div>
+          <div className="text-emerald-300 text-sm">Gjenstand er ledig</div>
         )}
       </div>
 
@@ -133,20 +133,20 @@ export default function ItemDetail() {
           disabled={loading}
           className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-600 rounded text-sm font-semibold"
         >
-          Взять этот предмет по штрихкоду пользователя
+          Lån denne gjenstanden med brukerstrekkode
         </button>
       </div>
 
       <div>
-        <h3 className="font-medium mb-2">История займов</h3>
+        <h3 className="font-medium mb-2">Utlånshistorikk</h3>
         {item.history.length === 0 ? (
-          <div className="text-slate-400 text-sm">История пока пуста.</div>
+          <div className="text-slate-400 text-sm">Historikken er tom foreløpig.</div>
         ) : (
           <ul className="list-disc pl-5 space-y-1 text-sm">
             {item.history.map((h) => (
               <li key={h.id}>
-                {h.loan_date} — {h.user_name || h.user_id || "Неизвестный пользователь"} —{" "}
-                {h.return_date ? `вернул ${h.return_date}` : `до ${h.due_date || "—"}`}
+                {h.loan_date} — {h.user_name || h.user_id || "Ukjent bruker"} —{" "}
+                {h.return_date ? `returnerte ${h.return_date}` : `til ${h.due_date || "—"}`}
               </li>
             ))}
           </ul>
