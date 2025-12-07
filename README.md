@@ -2,6 +2,10 @@
 
 A modern, web-based item lending and management system for IT/Driftstøtte departments. Built with React and Flask, featuring barcode scanning, user authentication, and comprehensive admin controls.
 
+🌐 **Live Demo**: [View on GitHub Pages](https://your-username.github.io/lager-project/)
+
+> ⚠️ **Note**: The frontend is hosted on GitHub Pages, but the backend needs to be deployed separately (see [DEPLOYMENT.md](./DEPLOYMENT.md) for details).
+
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.8+-green.svg)
 ![React](https://img.shields.io/badge/react-19-blue.svg)
@@ -331,4 +335,5 @@ For issues or questions, please open an issue in the repository.
 ---
 
 **Built with ❤️ for efficient IT equipment management**
+
 
