@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 // Offentlig gjenstandsside: detaljer, historikk og mulighet til å låne gjenstand med brukerstrekkode.
 export default function ItemDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { isUser, user } = useAuth();
   const [item, setItem] = useState(null);
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
+  const [dueDate, setDueDate] = useState("");
 
   useEffect(() => {
     loadItem();
@@ -29,10 +32,23 @@ export default function ItemDetail() {
 
   async function handleTakeItem() {
     if (!item) return;
-    const userBarcode = window.prompt("Brukerstrekkode:");
-    if (!userBarcode) return;
-    const due = window.prompt("Returdato (YYYY-MM-DD):");
-    if (!due) return;
+
+    // If user not logged in, redirect to login
+    if (!isUser) {
+      if (window.confirm("Du må logge inn for å låne gjenstander. Gå til innloggingssiden?")) {
+        navigate('/user/login');
+      }
+      return;
+    }
+
+    // If no due date set, set default (next week)
+    if (!dueDate) {
+      const today = new Date();
+      const nextWeek = new Date(today);
+      nextWeek.setDate(today.getDate() + 7);
+      setDueDate(nextWeek.toISOString().split('T')[0]);
+      return; // Will retry on next click
+    }
 
     setLoading(true);
     setMsg("");
@@ -40,17 +56,18 @@ export default function ItemDetail() {
       const res = await fetch(`/loans`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: 'include',
         body: JSON.stringify({
-          user_barcode: userBarcode.trim(),
           item_id: item.id,
-          due_date: due.trim(),
+          due_date: dueDate.trim(),
         }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setMsg(data.error || "Kunne ikke opprette lån");
+        setMsg(data.error || "Kunne ikke låne gjenstand");
       } else {
-        setMsg("Gjenstand utlånt til denne brukeren");
+        setMsg(`Gjenstand lånt til ${dueDate}`);
+        setDueDate("");
         await loadItem();
       }
     } catch (e) {
@@ -82,28 +99,70 @@ export default function ItemDetail() {
         </div>
       </div>
 
-      <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-slate-800 p-4 rounded border border-slate-700">
-          <div>
-            <strong>Strekkode:</strong> {item.barcode || "—"}
-          </div>
-          <div>
-            <strong>Kategori:</strong> {item.category || "—"}
-          </div>
-          <div>
-            <strong>Plassering:</strong> {item.location || "—"}
+      <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-5 rounded-xl border border-slate-700/50 shadow-lg">
+          <h4 className="text-sm font-semibold text-slate-400 mb-4 uppercase tracking-wide">Informasjon</h4>
+          <div className="space-y-3">
+            {item.barcode && (
+              <div>
+                <div className="text-xs text-slate-500 mb-1.5">Strekkode</div>
+                <div className="flex items-center gap-2">
+                  <code className="text-base font-mono bg-slate-900/70 px-3 py-2 rounded-lg border border-slate-700 text-emerald-300 font-semibold tracking-wider flex-1">
+                    {item.barcode}
+                  </code>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(item.barcode);
+                      alert('Strekkode kopiert!');
+                    }}
+                    className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition text-sm"
+                    title="Kopier strekkode"
+                  >
+                    📋
+                  </button>
+                </div>
+              </div>
+            )}
+            <div>
+              <div className="text-xs text-slate-500 mb-1.5">Kategori</div>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-500/20 text-blue-300 rounded-lg border border-blue-500/30">
+                <span className="w-2 h-2 rounded-full bg-blue-400"></span>
+                {item.category || "—"}
+              </div>
+            </div>
+            <div>
+              <div className="text-xs text-slate-500 mb-1.5">Plassering</div>
+              <div className="text-white font-medium">📍 {item.location || "—"}</div>
+            </div>
           </div>
         </div>
-        <div className="bg-slate-800 p-4 rounded border border-slate-700">
-          <div>
-            <strong>Antall:</strong>{" "}
-            <span className="font-semibold">{item.quantity}</span>
-          </div>
-          {item.due_date && (
-            <div className="mt-1 text-sm text-slate-300">
-              Nærmeste returdato: {item.due_date}
+        <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-5 rounded-xl border border-slate-700/50 shadow-lg">
+          <h4 className="text-sm font-semibold text-slate-400 mb-4 uppercase tracking-wide">Lager</h4>
+          <div className="space-y-3">
+            <div>
+              <div className="text-xs text-slate-500 mb-1.5">Antall tilgjengelig</div>
+              <div className="flex items-center gap-2">
+                <div className={`text-3xl font-bold ${
+                  item.quantity > 0 ? 'text-emerald-400' : 'text-red-400'
+                }`}>
+                  {item.quantity}
+                </div>
+                <span className="text-slate-300">stk</span>
+              </div>
             </div>
-          )}
+            {item.due_date && (
+              <div>
+                <div className="text-xs text-slate-500 mb-1.5">Nærmeste returdato</div>
+                <div className="text-orange-300 font-medium">📅 {item.due_date}</div>
+              </div>
+            )}
+            {item.description && (
+              <div className="pt-3 border-t border-slate-700/50">
+                <div className="text-xs text-slate-500 mb-1.5">Beskrivelse</div>
+                <div className="text-sm text-slate-300">{item.description}</div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -128,13 +187,43 @@ export default function ItemDetail() {
       </div>
 
       <div className="mb-8">
-        <button
-          onClick={handleTakeItem}
-          disabled={loading}
-          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-600 rounded text-sm font-semibold"
-        >
-          Lån denne gjenstanden med brukerstrekkode
-        </button>
+        {isUser ? (
+          <>
+            {!item.active_loan && (
+              <>
+                <div className="mb-4">
+                  <label className="block text-sm text-slate-300 mb-2">
+                    Til når låner du gjenstanden?
+                  </label>
+                  <input
+                    type="date"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="px-3 py-2 bg-slate-800 border border-slate-700 rounded text-white focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <button
+                  onClick={handleTakeItem}
+                  disabled={loading || !dueDate}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-600 disabled:cursor-not-allowed rounded text-sm font-semibold"
+                >
+                  {loading ? 'Behandler...' : 'Lån denne gjenstanden'}
+                </button>
+              </>
+            )}
+          </>
+        ) : (
+          <div className="bg-slate-800 border border-slate-700 rounded p-4">
+            <p className="text-slate-300 mb-3">Du må logge inn for å låne gjenstander</p>
+            <button
+              onClick={() => navigate('/user/login')}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded text-sm font-semibold"
+            >
+              Logg inn
+            </button>
+          </div>
+        )}
       </div>
 
       <div>
