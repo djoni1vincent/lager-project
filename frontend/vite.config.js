@@ -12,4 +12,13 @@ export default defineConfig({
       },
     }),
   ],
+  // Use relative paths for GitHub Pages compatibility (works with HashRouter)
+  base: './',
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+  },
+  define: {
+    'import.meta.env.GITHUB_PAGES': JSON.stringify(process.env.GITHUB_PAGES || 'false'),
+  },
 })

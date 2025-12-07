@@ -17,7 +17,15 @@ try {
 // Global fetch wrapper: automatically prepend API base to relative paths
 try {
   const _fetch = window.fetch.bind(window);
-  const API_BASE = (window.__API_BASE__ || "http://localhost:5000").replace(/\/$/, "");
+  // Use environment variable, or fallback to localhost for development
+  const API_BASE = (
+    import.meta.env.VITE_API_BASE || 
+    window.__API_BASE__ || 
+    "http://localhost:5000"
+  ).replace(/\/$/, "");
+  
+  console.log('API Base URL:', API_BASE);
+  
   window.fetch = (input, init = {}) => {
     try {
       // If input is a relative path (starts with '/'), forward to backend API base
@@ -36,11 +44,17 @@ try {
 } catch (e) {}
 
 import App from "./App.jsx";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter, HashRouter } from "react-router-dom";
 import "./index.css";
 
+// Use HashRouter for GitHub Pages compatibility (avoids 404s on refresh)
+// Check if we're on GitHub Pages or if explicitly set
+const isGitHubPages = import.meta.env.GITHUB_PAGES === 'true' || 
+                      window.location.hostname.includes('github.io');
+const Router = isGitHubPages ? HashRouter : BrowserRouter;
+
 createRoot(document.getElementById("root")).render(
-  <BrowserRouter>
+  <Router>
     <App />
-  </BrowserRouter>
+  </Router>
 );
