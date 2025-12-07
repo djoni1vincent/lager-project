@@ -5,6 +5,7 @@ import AdminUsers from './AdminUsers';
 import AdminItems from './AdminItems';
 import AdminItemDetail from './AdminItemDetail';
 import AdminFlags from './AdminFlags';
+import AdminLoans from './AdminLoans';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -27,6 +28,7 @@ export default function AdminDashboard() {
         <Route path="/users" element={<AdminUsers />} />
         <Route path="/items" element={<AdminItems />} />
         <Route path="/items/:id" element={<AdminItemDetail />} />
+        <Route path="/loans" element={<AdminLoans />} />
         <Route path="/flags" element={<AdminFlags />} />
       </Routes>
     </div>
@@ -66,16 +68,16 @@ function AdminOverview() {
           description="Administrer gjenstander"
         />
         <AdminCard
+          title="Lån"
+          icon="📋"
+          onClick={() => navigate('/admin/loans')}
+          description="Administrer lån"
+        />
+        <AdminCard
           title="Flagg"
           icon="🚩"
           onClick={() => navigate('/admin/flags')}
           description="Se problemer"
-        />
-        <AdminCard
-          title="Innstillinger"
-          icon="⚙️"
-          onClick={() => alert('Innstillinger kommer snart')}
-          description="Systeminnstillinger"
         />
       </div>
     </div>
