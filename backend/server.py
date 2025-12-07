@@ -125,11 +125,21 @@ def init_db():
         due_date TEXT,
         return_date TEXT,
         notes TEXT,
+        delivery_status TEXT,
+        delivery_notes TEXT,
+        report TEXT,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY(item_id) REFERENCES items(id),
         FOREIGN KEY(user_id) REFERENCES users(id)
     )
     ''')
+
+    # Add new columns if they don't exist
+    for col in ['delivery_status', 'delivery_notes', 'report']:
+        try:
+            c.execute(f"ALTER TABLE loans ADD COLUMN {col} TEXT")
+        except sqlite3.OperationalError:
+            pass  # Column already exists
 
     # Flags: system issues (missing barcode, defects, overdue, etc).
     c.execute('''
@@ -149,12 +159,13 @@ def init_db():
     )
     ''')
 
-    # Optional column for admin resolution notes (added later, so use ALTER TABLE).
-    try:
-        c.execute("ALTER TABLE flags ADD COLUMN resolution_notes TEXT")
-    except sqlite3.OperationalError:
-        # Column probably already exists – safe to ignore.
-        pass
+    # Optional columns for admin resolution notes and status (added later, so use ALTER TABLE).
+    for col in ['resolution_notes', 'status', 'loan_id']:
+        try:
+            c.execute(f"ALTER TABLE flags ADD COLUMN {col} TEXT")
+        except sqlite3.OperationalError:
+            # Column probably already exists – safe to ignore.
+            pass
 
     conn.commit()
 
@@ -382,6 +393,121 @@ def list_users():
     return jsonify([dict(u) for u in users])
 
 
+@app.route("/users/search", methods=["POST"])
+def search_users_by_name():
+    """Search users by name. Used for login selection."""
+    data = request.json or {}
+    name = data.get("name", "").strip()
+
+    if not name:
+        return jsonify([]), 200
+
+    conn = get_db()
+    users = conn.execute(
+        "SELECT id, name, role, barcode, class_year FROM users WHERE name LIKE ? ORDER BY name",
+        (f"%{name}%",)
+    ).fetchall()
+    conn.close()
+    return jsonify([dict(u) for u in users])
+
+
+@app.route("/auth/user/login", methods=["POST"])
+def user_login():
+    """User login by name and password. Creates user if doesn't exist (with password and class)."""
+    data = request.json or {}
+    name = data.get("name", "").strip()
+    password = data.get("password", "")
+    user_id = data.get("user_id")  # Optional: if selecting from search results
+    class_year = data.get("class_year", "").strip()  # Optional: for new user registration
+
+    if not name and not user_id:
+        return jsonify({"error": "Navn eller bruker_id påkrevd"}), 400
+
+    conn = get_db()
+
+    # If user_id provided, verify password
+    if user_id:
+        user = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+        if not user:
+            conn.close()
+            return jsonify({"error": "Bruker ikke funnet"}), 404
+
+        # Check password
+        if user["password_hash"]:
+            if not password or not check_password_hash(user["password_hash"], password):
+                conn.close()
+                return jsonify({"error": "Feil passord"}), 401
+    else:
+        # Search for exact match first
+        user = conn.execute("SELECT * FROM users WHERE name = ?", (name,)).fetchone()
+
+        # If not found, create new user (requires password and class_year)
+        if not user:
+            if not password:
+                conn.close()
+                return jsonify({"error": "Passord påkrevd for ny bruker"}), 400
+            if not class_year:
+                conn.close()
+                return jsonify({"error": "Klasse påkrevd for ny bruker"}), 400
+
+            try:
+                c = conn.cursor()
+                password_hash = generate_password_hash(password)
+                c.execute(
+                    "INSERT INTO users (name, role, password_hash, class_year, created_at, updated_at) VALUES (?, 'user', ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+                    (name, password_hash, class_year)
+                )
+                conn.commit()
+                user_id_new = c.lastrowid
+                user = conn.execute("SELECT * FROM users WHERE id = ?", (user_id_new,)).fetchone()
+            except Exception as e:
+                conn.rollback()
+                conn.close()
+                return jsonify({"error": "Kunne ikke opprette bruker", "detail": str(e)}), 500
+        else:
+            # User exists, verify password
+            if user["password_hash"]:
+                if not password or not check_password_hash(user["password_hash"], password):
+                    conn.close()
+                    return jsonify({"error": "Feil passord"}), 401
+            else:
+                # User exists but has no password - set it now
+                if not password:
+                    conn.close()
+                    return jsonify({"error": "Passord påkrevd"}), 400
+                if not class_year:
+                    conn.close()
+                    return jsonify({"error": "Klasse påkrevd"}), 400
+
+                password_hash = generate_password_hash(password)
+                conn.execute(
+                    "UPDATE users SET password_hash = ?, class_year = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    (password_hash, class_year, user["id"])
+                )
+                conn.commit()
+                user = conn.execute("SELECT * FROM users WHERE id = ?", (user["id"],)).fetchone()
+
+    # Set user session
+    session["user_id"] = user["id"]
+    session["is_user"] = True
+
+    user_dict = dict(user)
+    user_dict.pop("password_hash", None)
+    user_dict.pop("email", None)
+    user_dict.pop("phone", None)
+
+    conn.close()
+    return jsonify({"message": "ok", "user": user_dict}), 200
+
+
+@app.route("/auth/user/logout", methods=["POST"])
+def user_logout():
+    """User logout."""
+    session.pop("user_id", None)
+    session.pop("is_user", None)
+    return jsonify({"message": "Logged out"}), 200
+
+
 @app.route("/users/<int:user_id>", methods=["GET"])
 def get_user(user_id):
     """Get user details and loan history (public view)."""
@@ -418,7 +544,7 @@ def get_user(user_id):
 @app.route("/loans", methods=["POST"])
 def create_loan():
     """
-    Create a loan. No auth required, uses barcode.
+    Create a loan. Uses session user_id if available, otherwise requires user_barcode.
     Request: {"user_barcode": "...", "item_barcode": "..." or "item_id": 123, "due_date": "YYYY-MM-DD", "is_manual": boolean}
     Response: loan object
     """
@@ -429,20 +555,29 @@ def create_loan():
     due_date = data.get("due_date")
     is_manual = data.get("is_manual", False)
 
-    if not user_barcode or not due_date:
-        return jsonify({"error": "user_barcode and due_date required"}), 400
+    if not due_date:
+        return jsonify({"error": "due_date required"}), 400
 
     if not item_barcode and not item_id:
         return jsonify({"error": "item_barcode or item_id required"}), 400
 
     conn = get_db()
 
-    # Resolve user
-    user = conn.execute("SELECT id FROM users WHERE barcode = ?", (user_barcode,)).fetchone()
-    if not user:
+    # Resolve user: try session first, then barcode
+    user_id = None
+    if session.get("is_user"):
+        user_id = session["user_id"]
+    elif session.get("is_admin") and data.get("user_id"):
+        user_id = data.get("user_id")
+    elif user_barcode:
+        user = conn.execute("SELECT id FROM users WHERE barcode = ?", (user_barcode,)).fetchone()
+        if not user:
+            conn.close()
+            return jsonify({"error": "User barcode not found"}), 404
+        user_id = user["id"]
+    else:
         conn.close()
-        return jsonify({"error": "User barcode not found"}), 404
-    user_id = user["id"]
+        return jsonify({"error": "user_barcode or user session required"}), 400
 
     # Resolve item
     item = None
@@ -494,36 +629,50 @@ def create_loan():
 @app.route("/loans/<int:loan_id>/return", methods=["POST"])
 def return_loan(loan_id):
     """
-    Return an item (mark loan as returned). No auth, but verifies user_barcode for safety.
-    Request: {"user_barcode": "..."}
+    Return an item (mark loan as returned). Uses session user_id if available, otherwise requires user_barcode.
+    Request: {"user_barcode": "...", "return_message": "..."} or uses session
+    If return_message is provided, creates a flag for admin review.
     """
-    data = request.json or {}
-    user_barcode = data.get("user_barcode", "").strip()
+    try:
+        data = request.json or {}
+    except Exception:
+        data = {}
 
-    if not user_barcode:
-        return jsonify({"error": "user_barcode required"}), 400
+    user_barcode = data.get("user_barcode", "").strip() if data else ""
+    return_message = data.get("return_message", "").strip() if data else ""
 
     conn = get_db()
 
-    # Resolve user
-    user = conn.execute("SELECT id FROM users WHERE barcode = ?", (user_barcode,)).fetchone()
-    if not user:
+    # Resolve user: try session first, then barcode
+    user_id = None
+
+    if session.get("is_user"):
+        user_id = session.get("user_id")
+    elif session.get("is_admin") and data.get("user_id"):
+        user_id = data.get("user_id")
+    elif user_barcode:
+        user = conn.execute("SELECT id FROM users WHERE barcode = ?", (user_barcode,)).fetchone()
+        if not user:
+            conn.close()
+            return jsonify({"error": "Brukerstrekkode ikke funnet"}), 404
+        user_id = user["id"]
+    else:
         conn.close()
-        return jsonify({"error": "User barcode not found"}), 404
+        return jsonify({"error": "user_barcode eller brukersesjon påkrevd. Vennligst logg inn på nytt."}), 400
 
     # Get loan and verify it belongs to this user
     loan = conn.execute("SELECT * FROM loans WHERE id = ?", (loan_id,)).fetchone()
     if not loan:
         conn.close()
-        return jsonify({"error": "Loan not found"}), 404
+        return jsonify({"error": "Lån ikke funnet"}), 404
 
-    if loan["user_id"] != user["id"]:
+    if loan["user_id"] != user_id and not session.get("is_admin"):
         conn.close()
-        return jsonify({"error": "Loan does not belong to this user"}), 401
+        return jsonify({"error": "Lånet tilhører ikke denne brukeren"}), 401
 
     if loan["return_date"] is not None:
         conn.close()
-        return jsonify({"error": "Loan already returned"}), 400
+        return jsonify({"error": "Lån allerede returnert"}), 400
 
     try:
         c = conn.cursor()
@@ -535,6 +684,21 @@ def return_loan(loan_id):
             "UPDATE items SET quantity = quantity + 1 WHERE id = ?",
             (loan["item_id"],)
         )
+
+        # If user provided a return message, create a flag for admin
+        if return_message:
+            item = conn.execute("SELECT name FROM items WHERE id = ?", (loan["item_id"],)).fetchone()
+            item_name = item["name"] if item else f"Item {loan['item_id']}"
+            user = conn.execute("SELECT name FROM users WHERE id = ?", (user_id,)).fetchone()
+            user_name = user["name"] if user else f"User {user_id}"
+
+            flag_message = f"Bruker {user_name} returnerte gjenstand '{item_name}' med melding:\n\n{return_message}"
+            c.execute(
+                "INSERT INTO flags (item_id, user_id, loan_id, flag_type, message, status, created_at) "
+                "VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)",
+                (loan["item_id"], user_id, loan_id, "return_message", flag_message, "under_vurdering")
+            )
+
         conn.commit()
 
         updated = conn.execute("SELECT * FROM loans WHERE id = ?", (loan_id,)).fetchone()
@@ -543,7 +707,33 @@ def return_loan(loan_id):
     except Exception as e:
         conn.rollback()
         conn.close()
-        return jsonify({"error": "Could not return loan", "detail": str(e)}), 500
+        return jsonify({"error": "Kunne ikke returnere lån", "detail": str(e)}), 500
+
+
+@app.route("/users/me/loans", methods=["GET"])
+def get_user_loans():
+    """Get active loans for current logged-in user."""
+    if not session.get("is_user"):
+        return jsonify({"error": "Brukersesjon påkrevd"}), 401
+
+    user_id = session["user_id"]
+    conn = get_db()
+
+    loans = conn.execute(
+        """
+        SELECT loans.id, loans.item_id, loans.loan_date, loans.due_date,
+               items.name as item_name, items.barcode as item_barcode,
+               items.category, items.location
+        FROM loans
+        LEFT JOIN items ON loans.item_id = items.id
+        WHERE loans.user_id = ? AND loans.return_date IS NULL
+        ORDER BY loans.due_date ASC
+        """,
+        (user_id,)
+    ).fetchall()
+
+    conn.close()
+    return jsonify([dict(l) for l in loans])
 
 
 @app.route("/loans/<int:loan_id>/extend", methods=["POST"])
@@ -643,9 +833,25 @@ def create_flag():
 @app.route("/admin/flags", methods=["GET"])
 @admin_required
 def list_flags():
-    """List all flags (admin only)."""
+    """List all flags (admin only). Unresolved flags first, then by date."""
     conn = get_db()
-    flags = conn.execute("SELECT * FROM flags ORDER BY created_at DESC").fetchall()
+    flags = conn.execute(
+        """
+        SELECT flags.*,
+               items.name as item_name, items.barcode as item_barcode,
+               users.name as user_name, users.class_year
+        FROM flags
+        LEFT JOIN items ON flags.item_id = items.id
+        LEFT JOIN users ON flags.user_id = users.id
+        ORDER BY
+          CASE
+            WHEN flags.status = 'under_vurdering' OR flags.resolved = 0 THEN 0
+            WHEN flags.status = 'ferdig' OR flags.resolved = 1 THEN 1
+            ELSE 2
+          END,
+          flags.created_at DESC
+        """
+    ).fetchall()
     conn.close()
     return jsonify([dict(f) for f in flags])
 
@@ -653,29 +859,52 @@ def list_flags():
 @app.route("/admin/flags/<int:flag_id>/resolve", methods=["PUT"])
 @admin_required
 def resolve_flag(flag_id):
-    """Resolve a flag (admin only). Optionally accept resolution_notes."""
+    """Update flag status and resolution notes (admin only)."""
     data = request.json or {}
-    resolution_notes = data.get("resolution_notes")
+    status = data.get("status", "ferdig")  # under_vurdering, ferdig, avvist
+    resolution_notes = data.get("resolution_notes", "").strip()
 
     conn = get_db()
-    try:
-        if resolution_notes is not None:
-            conn.execute(
-                "UPDATE flags SET resolved = 1, resolved_at = CURRENT_TIMESTAMP, resolution_notes = ? WHERE id = ?",
-                (resolution_notes, flag_id)
-            )
-        else:
-            conn.execute(
-                "UPDATE flags SET resolved = 1, resolved_at = CURRENT_TIMESTAMP WHERE id = ?",
-                (flag_id,)
-            )
-        conn.commit()
+    flag = conn.execute("SELECT * FROM flags WHERE id = ?", (flag_id,)).fetchone()
+    if not flag:
         conn.close()
-        return jsonify({"message": "Flag resolved"})
+        return jsonify({"error": "Flagg ikke funnet"}), 404
+
+    try:
+        resolved = 1 if status == "ferdig" else 0
+        resolved_at = "CURRENT_TIMESTAMP" if resolved else None
+
+        if resolution_notes:
+            if resolved_at:
+                conn.execute(
+                    "UPDATE flags SET status = ?, resolved = ?, resolved_at = CURRENT_TIMESTAMP, resolution_notes = ? WHERE id = ?",
+                    (status, resolved, resolution_notes, flag_id)
+                )
+            else:
+                conn.execute(
+                    "UPDATE flags SET status = ?, resolved = ?, resolution_notes = ? WHERE id = ?",
+                    (status, resolved, resolution_notes, flag_id)
+                )
+        else:
+            if resolved_at:
+                conn.execute(
+                    "UPDATE flags SET status = ?, resolved = ?, resolved_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    (status, resolved, flag_id)
+                )
+            else:
+                conn.execute(
+                    "UPDATE flags SET status = ?, resolved = ? WHERE id = ?",
+                    (status, resolved, flag_id)
+                )
+        conn.commit()
+
+        updated = conn.execute("SELECT * FROM flags WHERE id = ?", (flag_id,)).fetchone()
+        conn.close()
+        return jsonify(dict(updated))
     except Exception as e:
         conn.rollback()
         conn.close()
-        return jsonify({"error": "Could not resolve flag", "detail": str(e)}), 500
+        return jsonify({"error": "Kunne ikke oppdatere flagg", "detail": str(e)}), 500
 
 
 # ============================================================================
@@ -727,20 +956,38 @@ def auth_logout():
 
 @app.route("/auth/me", methods=["GET"])
 def auth_me():
-    """Get current admin session."""
-    print(f"DEBUG: auth_me - session.get('is_admin'): {session.get('is_admin')}")
-    if not session.get("is_admin"):
-        return jsonify({"is_admin": False, "user": None}), 200
-
+    """Get current admin or user session."""
     conn = get_db()
-    user = conn.execute("SELECT id, name, role, barcode FROM users WHERE id = ?", (session["admin_id"],)).fetchone()
+
+    # Check admin session
+    if session.get("is_admin"):
+        user = conn.execute("SELECT id, name, role, barcode FROM users WHERE id = ?", (session.get("admin_id"),)).fetchone()
+        conn.close()
+        if not user:
+            session.clear()
+            return jsonify({"is_admin": False, "is_user": False, "user": None}), 200
+        user_dict = dict(user)
+        user_dict.pop("password_hash", None)
+        return jsonify({"is_admin": True, "is_user": False, "user": user_dict}), 200
+
+    # Check user session
+    if session.get("is_user"):
+        user_id = session.get("user_id")
+        if user_id:
+            user = conn.execute("SELECT id, name, role, barcode, class_year FROM users WHERE id = ?", (user_id,)).fetchone()
+            conn.close()
+            if not user:
+                session.pop("user_id", None)
+                session.pop("is_user", None)
+                return jsonify({"is_admin": False, "is_user": False, "user": None}), 200
+            user_dict = dict(user)
+            user_dict.pop("password_hash", None)
+            user_dict.pop("email", None)
+            user_dict.pop("phone", None)
+            return jsonify({"is_admin": False, "is_user": True, "user": user_dict}), 200
+
     conn.close()
-
-    if not user:
-        session.clear()
-        return jsonify({"is_admin": False, "user": None}), 200
-
-    return jsonify({"is_admin": True, "user": dict(user)}), 200
+    return jsonify({"is_admin": False, "is_user": False, "user": None}), 200
 
 
 @app.route("/admin/users", methods=["GET"])
@@ -1136,6 +1383,95 @@ def admin_delete_class(class_year):
         conn.rollback()
         conn.close()
         return jsonify({"error": "Could not delete class", "detail": str(e)}), 500
+
+
+@app.route("/admin/loans", methods=["GET"])
+@admin_required
+def admin_list_loans():
+    """List all active loans (admin only)."""
+    conn = get_db()
+    loans = conn.execute(
+        """
+        SELECT loans.*,
+               items.name as item_name, items.barcode as item_barcode,
+               users.name as user_name, users.class_year
+        FROM loans
+        LEFT JOIN items ON loans.item_id = items.id
+        LEFT JOIN users ON loans.user_id = users.id
+        WHERE loans.return_date IS NULL
+        ORDER BY loans.due_date ASC
+        """
+    ).fetchall()
+    conn.close()
+    return jsonify([dict(l) for l in loans])
+
+
+@app.route("/admin/loans/<int:loan_id>/delivery", methods=["PUT"])
+@admin_required
+def admin_update_delivery(loan_id):
+    """Update delivery status and notes for a loan (admin only)."""
+    data = request.json or {}
+    delivery_status = data.get("delivery_status", "").strip()
+    delivery_notes = data.get("delivery_notes", "").strip()
+
+    conn = get_db()
+    loan = conn.execute("SELECT * FROM loans WHERE id = ?", (loan_id,)).fetchone()
+    if not loan:
+        conn.close()
+        return jsonify({"error": "Lån ikke funnet"}), 404
+
+    try:
+        updates = []
+        values = []
+        if delivery_status:
+            updates.append("delivery_status = ?")
+            values.append(delivery_status)
+        if delivery_notes is not None:
+            updates.append("delivery_notes = ?")
+            values.append(delivery_notes)
+
+        if not updates:
+            conn.close()
+            return jsonify({"error": "Ingen oppdateringer angitt"}), 400
+
+        values.append(loan_id)
+        sql = f"UPDATE loans SET {', '.join(updates)} WHERE id = ?"
+        conn.execute(sql, tuple(values))
+        conn.commit()
+
+        updated = conn.execute("SELECT * FROM loans WHERE id = ?", (loan_id,)).fetchone()
+        conn.close()
+        return jsonify(dict(updated))
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        return jsonify({"error": "Kunne ikke oppdatere levering", "detail": str(e)}), 500
+
+
+@app.route("/admin/loans/<int:loan_id>/report", methods=["PUT"])
+@admin_required
+def admin_update_report(loan_id):
+    """Update report for a loan (admin only)."""
+    data = request.json or {}
+    report = data.get("report", "").strip()
+
+    conn = get_db()
+    loan = conn.execute("SELECT * FROM loans WHERE id = ?", (loan_id,)).fetchone()
+    if not loan:
+        conn.close()
+        return jsonify({"error": "Lån ikke funnet"}), 404
+
+    try:
+        conn.execute("UPDATE loans SET report = ? WHERE id = ?", (report, loan_id))
+        conn.commit()
+
+        updated = conn.execute("SELECT * FROM loans WHERE id = ?", (loan_id,)).fetchone()
+        conn.close()
+        return jsonify(dict(updated))
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        return jsonify({"error": "Kunne ikke oppdatere rapport", "detail": str(e)}), 500
 
 
 @app.route("/admin/gdpr_cleanup", methods=["POST"])
