@@ -1,3 +1,5 @@
+# Made with AI
+
 # 📚 Lager System — Driftstøtte Item Management
 
 A modern, web-based item lending and management system for IT/Driftstøtte departments. Built with React and Flask, featuring barcode scanning, user authentication, and comprehensive admin controls.
