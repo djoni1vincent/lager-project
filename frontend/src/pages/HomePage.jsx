@@ -158,14 +158,6 @@ export default function HomePage() {
         >
           🔐 Admin Pålogging
         </motion.button>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => navigate('/scan')}
-          className="px-6 py-3 bg-gradient-to-r from-slate-700 to-slate-600 hover:from-slate-600 hover:to-slate-500 rounded-xl transition-all text-white font-semibold border border-slate-600"
-        >
-          🗂️ Naviger etter kategori
-        </motion.button>
       </motion.div>
 
       {/* Filters & search */}
